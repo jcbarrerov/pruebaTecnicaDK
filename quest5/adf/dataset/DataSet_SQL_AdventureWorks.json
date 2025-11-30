@@ -73,8 +73,8 @@
 			}
 		],
 		"typeProperties": {
-			"schema": "SalesLT",
-			"table": "Customer"
+			"schema": "",
+			"table": ""
 		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
