@@ -1,5 +1,5 @@
 {
-	"name": "pl_ValorPromedioPorPedido_silver",
+	"name": "pl_ValorPromedioPorPedido",
 	"properties": {
 		"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
 		"activities": [
