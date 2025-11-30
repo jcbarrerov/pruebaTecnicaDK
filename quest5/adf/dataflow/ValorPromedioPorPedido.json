@@ -10,7 +10,16 @@
 						"referenceName": "DataSet_SQL_AdventureWorks",
 						"type": "DatasetReference"
 					},
-					"name": "getData"
+					"name": "SalesOrderHeader",
+					"description": "basado en la tabla SalesLT.SalesOrderHeader"
+				},
+				{
+					"dataset": {
+						"referenceName": "DataSet_SQL_AdventureWorks",
+						"type": "DatasetReference"
+					},
+					"name": "SalesOrderDetail",
+					"description": "get SalesOrderDetail"
 				}
 			],
 			"sinks": [
@@ -22,31 +31,77 @@
 					"name": "SaveData"
 				}
 			],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "innerjoin",
+					"description": "SalesOrderHeader.SalesOrderID == SalesOrderDetail.SalesOrderID"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "aggregate2"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
+				"          SalesOrderID as integer,",
+				"          RevisionNumber as integer,",
+				"          OrderDate as timestamp,",
+				"          DueDate as timestamp,",
+				"          ShipDate as timestamp,",
+				"          Status as integer,",
+				"          OnlineOrderFlag as boolean,",
+				"          SalesOrderNumber as string,",
+				"          PurchaseOrderNumber as string,",
+				"          AccountNumber as string,",
 				"          CustomerID as integer,",
-				"          NameStyle as boolean,",
-				"          Title as string,",
-				"          FirstName as string,",
-				"          MiddleName as string,",
-				"          LastName as string,",
-				"          Suffix as string,",
-				"          CompanyName as string,",
-				"          SalesPerson as string,",
-				"          EmailAddress as string,",
-				"          Phone as string,",
-				"          PasswordHash as string,",
-				"          PasswordSalt as string,",
+				"          ShipToAddressID as integer,",
+				"          BillToAddressID as integer,",
+				"          ShipMethod as string,",
+				"          CreditCardApprovalCode as string,",
+				"          SubTotal as decimal(19,4),",
+				"          TaxAmt as decimal(19,4),",
+				"          Freight as decimal(19,4),",
+				"          TotalDue as decimal(19,4),",
+				"          Comment as string,",
 				"          rowguid as string,",
 				"          ModifiedDate as timestamp",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     query: 'SELECT d.SalesOrderID, SUM(d.LineTotal) AS OrderTotal, MIN(h.OrderDate) AS OrderDate\\n  FROM SalesLT.SalesOrderHeader h\\n  JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\n  WHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\n  GROUP BY d.SalesOrderID',",
-				"     format: 'query') ~> getData",
-				"getData sink(allowSchemaDrift: true,",
+				"     query: 'SELECT * FROM SalesLT.SalesOrderHeader ',",
+				"     format: 'query') ~> SalesOrderHeader",
+				"source(output(",
+				"          SalesOrderID as integer,",
+				"          SalesOrderDetailID as integer,",
+				"          OrderQty as short,",
+				"          ProductID as integer,",
+				"          UnitPrice as decimal(19,4),",
+				"          UnitPriceDiscount as decimal(19,4),",
+				"          LineTotal as decimal(38,6),",
+				"          rowguid as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT * FROM SalesLT.SalesOrderDetail',",
+				"     format: 'query') ~> SalesOrderDetail",
+				"SalesOrderHeader, SalesOrderDetail join(SalesOrderHeader@SalesOrderID == SalesOrderDetail@SalesOrderID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> innerjoin",
+				"innerjoin aggregate(groupBy(SalesOrderHeader@SalesOrderID),",
+				"     OrderTotal = sum(LineTotal),",
+				"          OrderDate = min(OrderDate)) ~> aggregate1",
+				"aggregate1 aggregate(groupBy({year(OrderDate)} = year(OrderDate),",
+				"          {month(OrderDate)} = month(OrderDate)),",
+				"     AOV = avg(OrderTotal),",
+				"          OrdersCount = count(SalesOrderID)) ~> aggregate2",
+				"aggregate2 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
 				"     umask: 0022,",
