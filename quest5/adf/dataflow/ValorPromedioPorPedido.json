@@ -44,7 +44,7 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     query: 'WITH OrderTotals AS (\\n  SELECT d.SalesOrderID, SUM(d.LineTotal) AS OrderTotal, MIN(h.OrderDate) AS OrderDate\\n  FROM SalesLT.SalesOrderHeader h\\n  JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\n  WHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\n  GROUP BY d.SalesOrderID\\n)\\nSELECT YEAR(OrderDate) AS Year, MONTH(OrderDate) AS Month,\\n       AVG(OrderTotal) AS AOV, COUNT(*) AS OrdersCount\\nFROM OrderTotals\\nGROUP BY YEAR(OrderDate), MONTH(OrderDate)',",
+				"     query: 'SELECT YEAR(OrderDate) AS Year, MONTH(OrderDate) AS Month,\\n       AVG(OrderTotal) AS AOV, COUNT(*) AS OrdersCount\\nFROM (  SELECT d.SalesOrderID, SUM(d.LineTotal) AS OrderTotal, MIN(h.OrderDate) AS OrderDate\\n        FROM SalesLT.SalesOrderHeader h\\n        JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\n        WHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\n        GROUP BY d.SalesOrderID)\\nGROUP BY YEAR(OrderDate), MONTH(OrderDate)',",
 				"     format: 'query') ~> getData",
 				"getData sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
