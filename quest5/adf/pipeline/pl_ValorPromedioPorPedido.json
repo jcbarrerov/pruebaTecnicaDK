@@ -17,15 +17,8 @@
 				"userProperties": [],
 				"typeProperties": {
 					"dataflow": {
-						"referenceName": "ValorPromedioPorPedido",
-						"type": "DataFlowReference",
-						"datasetParameters": {
-							"SaveData": {
-								"Contenedor": "gold",
-								"Directorio": "ventas",
-								"Archivo": "valorPromedioPorPedido"
-							}
-						}
+						"referenceName": "VentasTotales",
+						"type": "DataFlowReference"
 					},
 					"compute": {
 						"coreCount": 8,
