@@ -1,0 +1,44 @@
+{
+	"name": "TasaEntregasATiempo",
+	"properties": {
+		"description": "% de órdenes/lineas enviadas en o antes de la fecha de entrega esperada. (On-time deliveries / total deliveries) * 100.",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_SQL_AdventureWorks",
+						"type": "DatasetReference"
+					},
+					"name": "getData",
+					"description": "Import data from DataSet_SQL_AdventureWorks"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_Sink_DataLake",
+						"type": "DatasetReference"
+					},
+					"name": "saveData"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT YEAR(h.ShipDate) AS Year, MONTH(h.ShipDate) AS Month,\\n       SUM(CASE WHEN h.ShipDate <= h.DueDate THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS OnTimePct,\\n       COUNT(*) AS TotalShipments\\nFROM SalesLT.SalesOrderHeader h\\nWHERE h.ShipDate IS NOT NULL AND h.ShipDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY YEAR(h.ShipDate), MONTH(h.ShipDate)',",
+				"     format: 'query') ~> getData",
+				"getData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> saveData"
+			]
+		}
+	}
+}

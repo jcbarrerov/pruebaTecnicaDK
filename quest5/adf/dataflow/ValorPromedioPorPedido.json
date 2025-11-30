@@ -1,0 +1,60 @@
+{
+	"name": "ValorPromedioPorPedido",
+	"properties": {
+		"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_SQL_AdventureWorks",
+						"type": "DatasetReference"
+					},
+					"name": "getData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_Sink_DataLake",
+						"type": "DatasetReference"
+					},
+					"name": "SaveData"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as integer,",
+				"          NameStyle as boolean,",
+				"          Title as string,",
+				"          FirstName as string,",
+				"          MiddleName as string,",
+				"          LastName as string,",
+				"          Suffix as string,",
+				"          CompanyName as string,",
+				"          SalesPerson as string,",
+				"          EmailAddress as string,",
+				"          Phone as string,",
+				"          PasswordHash as string,",
+				"          PasswordSalt as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'WITH OrderTotals AS (\\n  SELECT d.SalesOrderID, SUM(d.LineTotal) AS OrderTotal, MIN(h.OrderDate) AS OrderDate\\n  FROM SalesLT.SalesOrderHeader h\\n  JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\n  WHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\n  GROUP BY d.SalesOrderID\\n)\\nSELECT YEAR(OrderDate) AS Year, MONTH(OrderDate) AS Month,\\n       AVG(OrderTotal) AS AOV, COUNT(*) AS OrdersCount\\nFROM OrderTotals\\nGROUP BY YEAR(OrderDate), MONTH(OrderDate)',",
+				"     format: 'query') ~> getData",
+				"getData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SaveData"
+			]
+		}
+	}
+}

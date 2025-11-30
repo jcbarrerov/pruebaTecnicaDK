@@ -1,0 +1,61 @@
+{
+	"name": "MargenBrutoPorcentaje",
+	"properties": {
+		"description": "(Ventas netas − Costo de bienes vendidos) / Ventas netas, expresado en %; mide rentabilidad antes de gastos operativos",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_SQL_AdventureWorks",
+						"type": "DatasetReference"
+					},
+					"name": "getData",
+					"description": "(Ventas netas − Costo de bienes vendidos) / Ventas netas, expresado en %; mide rentabilidad antes de gastos operativos"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_Sink_DataLake",
+						"type": "DatasetReference"
+					},
+					"name": "saveData"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as integer,",
+				"          NameStyle as boolean,",
+				"          Title as string,",
+				"          FirstName as string,",
+				"          MiddleName as string,",
+				"          LastName as string,",
+				"          Suffix as string,",
+				"          CompanyName as string,",
+				"          SalesPerson as string,",
+				"          EmailAddress as string,",
+				"          Phone as string,",
+				"          PasswordHash as string,",
+				"          PasswordSalt as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT\\n  YEAR(h.OrderDate) AS Year,\\n  MONTH(h.OrderDate) AS Month,\\n  SUM(d.LineTotal) AS Revenue,\\n  SUM(p.StandardCost * d.OrderQty) AS COGS,\\n  CASE WHEN SUM(d.LineTotal) = 0 THEN NULL\\n       ELSE (SUM(d.LineTotal) - SUM(p.StandardCost * d.OrderQty)) * 100.0 / SUM(d.LineTotal)\\n  END AS GrossMarginPct\\nFROM SalesLT.SalesOrderHeader h\\nJOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\nJOIN SalesLT.Product p ON d.ProductID = p.ProductID\\nWHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY YEAR(h.OrderDate), MONTH(h.OrderDate)',",
+				"     format: 'query') ~> getData",
+				"getData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> saveData"
+			]
+		}
+	}
+}

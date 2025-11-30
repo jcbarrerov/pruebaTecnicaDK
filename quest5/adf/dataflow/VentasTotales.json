@@ -1,0 +1,44 @@
+{
+	"name": "VentasTotales",
+	"properties": {
+		"description": "Suma del importe facturado por líneas de pedido (line totals) en un período",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_SQL_AdventureWorks",
+						"type": "DatasetReference"
+					},
+					"name": "getData",
+					"description": "Import data from DataSet_SQL_AdventureWorks"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DataSet_Sink_DataLake",
+						"type": "DatasetReference"
+					},
+					"name": "saveData"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT\\n  DATEPART(YEAR, h.OrderDate) AS Year,\\n  DATEPART(MONTH, h.OrderDate) AS Month,\\n  SUM(d.LineTotal) AS TotalSales\\nFROM SalesLT.SalesOrderHeader h\\nJOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\nWHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY DATEPART(YEAR,h.OrderDate), DATEPART(MONTH,h.OrderDate)',",
+				"     format: 'query') ~> getData",
+				"getData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> saveData"
+			]
+		}
+	}
+}

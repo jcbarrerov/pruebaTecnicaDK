@@ -1,0 +1,42 @@
+{
+	"name": "pl_ValorPromedioPorPedido",
+	"properties": {
+		"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
+		"activities": [
+			{
+				"name": "df_ValorPromedioPorPedido",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "ValorPromedioPorPedido",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"SaveData": {
+								"Contenedor": "gold",
+								"Directorio": "ventas",
+								"Archivo": "valorPromedioPorPedido"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-11-30T01:38:09Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

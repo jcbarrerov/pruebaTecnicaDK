@@ -1,0 +1,9 @@
+{
+	"name": "df-adventureworks-pruebadk",
+	"location": "westus2",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "d2055764-acb2-473a-acc5-a684f208b8fc",
+		"tenantId": "50ca9bdf-5a09-4f1f-8d68-1a7ca735b2b7"
+	}
+}
