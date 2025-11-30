@@ -42,7 +42,7 @@
 				"     query: 'SELECT \\n        DATEPART(YEAR, h.OrderDate) AS Año,\\n        DATEPART(MONTH, h.OrderDate) AS Mes,\\n        p.Name AS Producto,\\n        SUM(d.LineTotal) AS VentasProducto,\\n        RANK() OVER (\\n            PARTITION BY DATEPART(YEAR, h.OrderDate),\\n                         DATEPART(MONTH, h.OrderDate)\\n            ORDER BY SUM(d.LineTotal) DESC\\n        ) AS RankingMensual\\n    FROM SalesLT.SalesOrderHeader h\\n    JOIN SalesLT.SalesOrderDetail d \\n        ON h.SalesOrderID = d.SalesOrderID\\n    JOIN SalesLT.Product p\\n        ON d.ProductID = p.ProductID\\n    GROUP BY \\n        DATEPART(YEAR, h.OrderDate),\\n        DATEPART(MONTH, h.OrderDate),\\n        p.Name',",
 				"     format: 'query') ~> RAKING",
 				"RAKING filter(RankingMensual <= 5) ~> Condicion",
-				" sink(allowSchemaDrift: true,",
+				"Condicion sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
 				"     umask: 0022,",
