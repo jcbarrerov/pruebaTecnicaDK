@@ -37,57 +37,6 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Data flow1",
-						"type": "ExecuteDataFlow",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataflow": {
-								"referenceName": "dataflow1",
-								"type": "DataFlowReference",
-								"parameters": {},
-								"datasetParameters": {
-									"SalesOrderHeader": {},
-									"SalesOrderDetail": {},
-									"SaveData": {
-										"Contenedor": "gold",
-										"Directorio": "ventas",
-										"Archivo": "dataflow1"
-									}
-								}
-							},
-							"staging": {},
-							"compute": {
-								"coreCount": 8,
-								"computeType": "General"
-							},
-							"traceLevel": "Fine"
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/pl_MargenBrutoPorcentaje')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -265,7 +214,7 @@
 						"userProperties": [],
 						"typeProperties": {
 							"dataflow": {
-								"referenceName": "dataflow1",
+								"referenceName": "ValorPromedioPorPedido",
 								"type": "DataFlowReference",
 								"parameters": {},
 								"datasetParameters": {
@@ -293,7 +242,7 @@
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
+				"[concat(variables('factoryId'), '/dataflows/ValorPromedioPorPedido')]"
 			]
 		},
 		{
@@ -866,127 +815,6 @@
 						"     postCommands: [],",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> saveData"
-					]
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
-				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "DataSet_SQL_AdventureWorks",
-								"type": "DatasetReference"
-							},
-							"name": "SalesOrderHeader",
-							"description": "basado en la tabla SalesLT.SalesOrderHeader"
-						},
-						{
-							"dataset": {
-								"referenceName": "DataSet_SQL_AdventureWorks",
-								"type": "DatasetReference"
-							},
-							"name": "SalesOrderDetail",
-							"description": "get SalesOrderDetail"
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "DataSet_Sink_DataLake",
-								"type": "DatasetReference"
-							},
-							"name": "SaveData"
-						}
-					],
-					"transformations": [
-						{
-							"name": "innerjoin",
-							"description": "SalesOrderHeader.SalesOrderID == SalesOrderDetail.SalesOrderID"
-						},
-						{
-							"name": "aggregate1"
-						},
-						{
-							"name": "aggregate2"
-						}
-					],
-					"scriptLines": [
-						"source(output(",
-						"          SalesOrderID as integer,",
-						"          RevisionNumber as integer,",
-						"          OrderDate as timestamp,",
-						"          DueDate as timestamp,",
-						"          ShipDate as timestamp,",
-						"          Status as integer,",
-						"          OnlineOrderFlag as boolean,",
-						"          SalesOrderNumber as string,",
-						"          PurchaseOrderNumber as string,",
-						"          AccountNumber as string,",
-						"          CustomerID as integer,",
-						"          ShipToAddressID as integer,",
-						"          BillToAddressID as integer,",
-						"          ShipMethod as string,",
-						"          CreditCardApprovalCode as string,",
-						"          SubTotal as decimal(19,4),",
-						"          TaxAmt as decimal(19,4),",
-						"          Freight as decimal(19,4),",
-						"          TotalDue as decimal(19,4),",
-						"          Comment as string,",
-						"          rowguid as string,",
-						"          ModifiedDate as timestamp",
-						"     ),",
-						"     allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     isolationLevel: 'READ_UNCOMMITTED',",
-						"     query: 'SELECT * FROM SalesLT.SalesOrderHeader ',",
-						"     format: 'query') ~> SalesOrderHeader",
-						"source(output(",
-						"          SalesOrderID as integer,",
-						"          SalesOrderDetailID as integer,",
-						"          OrderQty as short,",
-						"          ProductID as integer,",
-						"          UnitPrice as decimal(19,4),",
-						"          UnitPriceDiscount as decimal(19,4),",
-						"          LineTotal as decimal(38,6),",
-						"          rowguid as string,",
-						"          ModifiedDate as timestamp",
-						"     ),",
-						"     allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     isolationLevel: 'READ_UNCOMMITTED',",
-						"     query: 'SELECT * FROM SalesLT.SalesOrderDetail',",
-						"     format: 'query') ~> SalesOrderDetail",
-						"SalesOrderHeader, SalesOrderDetail join(SalesOrderHeader@SalesOrderID == SalesOrderDetail@SalesOrderID,",
-						"     joinType:'inner',",
-						"     matchType:'exact',",
-						"     ignoreSpaces: false,",
-						"     broadcast: 'auto')~> innerjoin",
-						"innerjoin aggregate(groupBy(SalesOrderHeader@SalesOrderID),",
-						"     OrderTotal = sum(LineTotal),",
-						"          OrderDate = min(OrderDate)) ~> aggregate1",
-						"aggregate1 aggregate(groupBy(yearOrderDate = year(OrderDate),",
-						"          monthOrderDate = month(OrderDate)),",
-						"     AOV = avg(OrderTotal),",
-						"          OrdersCount = count(SalesOrderID)) ~> aggregate2",
-						"aggregate2 sink(allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     format: 'parquet',",
-						"     umask: 0022,",
-						"     preCommands: [],",
-						"     postCommands: [],",
-						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true) ~> SaveData"
 					]
 				}
 			},
