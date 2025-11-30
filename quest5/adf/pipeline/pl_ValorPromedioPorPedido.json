@@ -4,7 +4,7 @@
 		"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
 		"activities": [
 			{
-				"name": "df_ValorPromedioPorPedido_estesi",
+				"name": "df_ValorPromedioPorPedido",
 				"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
 				"type": "ExecuteDataFlow",
 				"dependsOn": [],
@@ -18,7 +18,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"dataflow": {
-						"referenceName": "ValorPromedioPorPedido",
+						"referenceName": "dataflow1",
 						"type": "DataFlowReference",
 						"datasetParameters": {
 							"SaveData": {
