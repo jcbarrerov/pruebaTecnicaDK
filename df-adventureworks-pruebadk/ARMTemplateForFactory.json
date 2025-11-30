@@ -1,0 +1,1006 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "df-adventureworks-pruebadk"
+		},
+		"dl_adventureworks_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'dl_adventureworks'"
+		},
+		"sql_database_adventureworks_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'sql_database_adventureworks'"
+		},
+		"dl_adventureworks_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://datalakepruebadk.dfs.core.windows.net/"
+		},
+		"sql_database_adventureworks_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "server-adventrureworks-pruebadk.database.windows.net"
+		},
+		"sql_database_adventureworks_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "DB-ADVENTUREWORKS-PRUEBA"
+		},
+		"sql_database_adventureworks_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "adminadmin"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow1",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SalesOrderHeader": {},
+									"SalesOrderDetail": {},
+									"SaveData": {
+										"Contenedor": "gold",
+										"Directorio": "ventas",
+										"Archivo": "dataflow1"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_MargenBrutoPorcentaje')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "(Ventas netas − Costo de bienes vendidos) / Ventas netas, expresado en %; mide rentabilidad antes de gastos operativos",
+				"activities": [
+					{
+						"name": "df_MargenBrutoPorcentaje",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "MargenBrutoPorcentaje",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"getData": {},
+									"saveData": {
+										"Contenedor": "gold",
+										"Directorio": "ventas",
+										"Archivo": "margenBrutoPorcentaje"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-11-30T01:38:09Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/MargenBrutoPorcentaje')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_TasaEntregasATiempo')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "df_TasaEntregasATiempo",
+						"description": "",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "TasaEntregasATiempo",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"getData": {},
+									"saveData": {
+										"Contenedor": "gold",
+										"Directorio": "ventas",
+										"Archivo": "tasaEntregasATiempo"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-11-30T01:58:17Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/TasaEntregasATiempo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_Top5ProductosMes')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Para cada mes, identificar los 5 productos con mayor monto vendido",
+				"activities": [
+					{
+						"name": "df_Top5ProductosMes",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Top5ProductosMes",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"RAKING": {},
+									"saveData": {
+										"Contenedor": "gold",
+										"Directorio": "ventas",
+										"Archivo": "top5ProductosMes"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-11-30T02:00:44Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Top5ProductosMes')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_ValorPromedioPorPedido')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
+				"activities": [
+					{
+						"name": "df_ValorPromedioPorPedido",
+						"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow1",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SalesOrderHeader": {},
+									"SalesOrderDetail": {},
+									"SaveData": {
+										"Contenedor": "gold",
+										"Directorio": "ventas",
+										"Archivo": "ValorPromedioPorPedido"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_VentasTotales')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "df_VentasTotales",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "VentasTotales",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"getData": {},
+									"saveData": {
+										"Contenedor": "gold",
+										"Directorio": "ventas",
+										"Archivo": "ventasTotales"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 16,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-11-30T01:42:15Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/VentasTotales')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataSet_SQL_AdventureWorks')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "sql_database_adventureworks",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "NameStyle",
+						"type": "bit"
+					},
+					{
+						"name": "Title",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MiddleName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Suffix",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CompanyName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SalesPerson",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EmailAddress",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Phone",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PasswordHash",
+						"type": "varchar"
+					},
+					{
+						"name": "PasswordSalt",
+						"type": "varchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "",
+					"table": ""
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sql_database_adventureworks')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataSet_Sink_DataLake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dl_adventureworks",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Contenedor": {
+						"type": "string"
+					},
+					"Directorio": {
+						"type": "string"
+					},
+					"Archivo": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "parquet",
+						"folderPath": {
+							"value": "@concat(dataset().Directorio,'/',dataset().Archivo)",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().Contenedor",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dl_adventureworks')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dl_adventureworks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('dl_adventureworks_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('dl_adventureworks_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_database_adventureworks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('sql_database_adventureworks_properties_typeProperties_server')]",
+					"database": "[parameters('sql_database_adventureworks_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('sql_database_adventureworks_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('sql_database_adventureworks_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ir-adventureworks')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MargenBrutoPorcentaje')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "(Ventas netas − Costo de bienes vendidos) / Ventas netas, expresado en %; mide rentabilidad antes de gastos operativos",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "getData",
+							"description": "(Ventas netas − Costo de bienes vendidos) / Ventas netas, expresado en %; mide rentabilidad antes de gastos operativos"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_Sink_DataLake",
+								"type": "DatasetReference"
+							},
+							"name": "saveData"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as integer,",
+						"          NameStyle as boolean,",
+						"          Title as string,",
+						"          FirstName as string,",
+						"          MiddleName as string,",
+						"          LastName as string,",
+						"          Suffix as string,",
+						"          CompanyName as string,",
+						"          SalesPerson as string,",
+						"          EmailAddress as string,",
+						"          Phone as string,",
+						"          PasswordHash as string,",
+						"          PasswordSalt as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT\\n  YEAR(h.OrderDate) AS Year,\\n  MONTH(h.OrderDate) AS Month,\\n  SUM(d.LineTotal) AS Revenue,\\n  SUM(p.StandardCost * d.OrderQty) AS COGS,\\n  CASE WHEN SUM(d.LineTotal) = 0 THEN NULL\\n       ELSE (SUM(d.LineTotal) - SUM(p.StandardCost * d.OrderQty)) * 100.0 / SUM(d.LineTotal)\\n  END AS GrossMarginPct\\nFROM SalesLT.SalesOrderHeader h\\nJOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\nJOIN SalesLT.Product p ON d.ProductID = p.ProductID\\nWHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY YEAR(h.OrderDate), MONTH(h.OrderDate)',",
+						"     format: 'query') ~> getData",
+						"getData sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> saveData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
+				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TasaEntregasATiempo')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "% de órdenes/lineas enviadas en o antes de la fecha de entrega esperada. (On-time deliveries / total deliveries) * 100.",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "getData",
+							"description": "Import data from DataSet_SQL_AdventureWorks"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_Sink_DataLake",
+								"type": "DatasetReference"
+							},
+							"name": "saveData"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT YEAR(h.ShipDate) AS Year, MONTH(h.ShipDate) AS Month,\\n       SUM(CASE WHEN h.ShipDate <= h.DueDate THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS OnTimePct,\\n       COUNT(*) AS TotalShipments\\nFROM SalesLT.SalesOrderHeader h\\nWHERE h.ShipDate IS NOT NULL AND h.ShipDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY YEAR(h.ShipDate), MONTH(h.ShipDate)',",
+						"     format: 'query') ~> getData",
+						"getData sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> saveData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
+				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Top5ProductosMes')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Para cada mes, identificar los 5 productos con mayor monto vendido",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "RAKING",
+							"description": "CTE"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_Sink_DataLake",
+								"type": "DatasetReference"
+							},
+							"name": "saveData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "Condicion"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          {Año} as integer,",
+						"          Mes as integer,",
+						"          Producto as string,",
+						"          VentasProducto as decimal(38,6),",
+						"          RankingMensual as long",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT \\n        DATEPART(YEAR, h.OrderDate) AS Año,\\n        DATEPART(MONTH, h.OrderDate) AS Mes,\\n        p.Name AS Producto,\\n        SUM(d.LineTotal) AS VentasProducto,\\n        RANK() OVER (\\n            PARTITION BY DATEPART(YEAR, h.OrderDate),\\n                         DATEPART(MONTH, h.OrderDate)\\n            ORDER BY SUM(d.LineTotal) DESC\\n        ) AS RankingMensual\\n    FROM SalesLT.SalesOrderHeader h\\n    JOIN SalesLT.SalesOrderDetail d \\n        ON h.SalesOrderID = d.SalesOrderID\\n    JOIN SalesLT.Product p\\n        ON d.ProductID = p.ProductID\\n    GROUP BY \\n        DATEPART(YEAR, h.OrderDate),\\n        DATEPART(MONTH, h.OrderDate),\\n        p.Name',",
+						"     format: 'query') ~> RAKING",
+						"RAKING filter(RankingMensual <= 5) ~> Condicion",
+						"Condicion sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> saveData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
+				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ValorPromedioPorPedido')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderHeader",
+							"description": "basado en la tabla SalesLT.SalesOrderHeader"
+						},
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetail",
+							"description": "get SalesOrderDetail"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_Sink_DataLake",
+								"type": "DatasetReference"
+							},
+							"name": "SaveData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "innerjoin",
+							"description": "SalesOrderHeader.SalesOrderID == SalesOrderDetail.SalesOrderID"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "aggregate2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          SalesOrderID as integer,",
+						"          RevisionNumber as integer,",
+						"          OrderDate as timestamp,",
+						"          DueDate as timestamp,",
+						"          ShipDate as timestamp,",
+						"          Status as integer,",
+						"          OnlineOrderFlag as boolean,",
+						"          SalesOrderNumber as string,",
+						"          PurchaseOrderNumber as string,",
+						"          AccountNumber as string,",
+						"          CustomerID as integer,",
+						"          ShipToAddressID as integer,",
+						"          BillToAddressID as integer,",
+						"          ShipMethod as string,",
+						"          CreditCardApprovalCode as string,",
+						"          SubTotal as decimal(19,4),",
+						"          TaxAmt as decimal(19,4),",
+						"          Freight as decimal(19,4),",
+						"          TotalDue as decimal(19,4),",
+						"          Comment as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT * FROM SalesLT.SalesOrderHeader ',",
+						"     format: 'query') ~> SalesOrderHeader",
+						"source(output(",
+						"          SalesOrderID as integer,",
+						"          SalesOrderDetailID as integer,",
+						"          OrderQty as short,",
+						"          ProductID as integer,",
+						"          UnitPrice as decimal(19,4),",
+						"          UnitPriceDiscount as decimal(19,4),",
+						"          LineTotal as decimal(38,6),",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT * FROM SalesLT.SalesOrderDetail',",
+						"     format: 'query') ~> SalesOrderDetail",
+						"SalesOrderHeader, SalesOrderDetail join(SalesOrderHeader@SalesOrderID == SalesOrderDetail@SalesOrderID,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> innerjoin",
+						"innerjoin aggregate(groupBy(SalesOrderHeader@SalesOrderID),",
+						"     OrderTotal = sum(LineTotal),",
+						"          OrderDate = min(OrderDate)) ~> aggregate1",
+						"aggregate1 aggregate(groupBy(yearOrderDate = year(OrderDate),",
+						"          monthOrderDate = month(OrderDate)),",
+						"     AOV = avg(OrderTotal),",
+						"          OrdersCount = count(SalesOrderID)) ~> aggregate2",
+						"aggregate2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SaveData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
+				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/VentasTotales')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Suma del importe facturado por líneas de pedido (line totals) en un período",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "getData",
+							"description": "Import data from DataSet_SQL_AdventureWorks"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_Sink_DataLake",
+								"type": "DatasetReference"
+							},
+							"name": "saveData"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT\\n  DATEPART(YEAR, h.OrderDate) AS Year,\\n  DATEPART(MONTH, h.OrderDate) AS Month,\\n  SUM(d.LineTotal) AS TotalSales\\nFROM SalesLT.SalesOrderHeader h\\nJOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\nWHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY DATEPART(YEAR,h.OrderDate), DATEPART(MONTH,h.OrderDate)',",
+						"     format: 'query') ~> getData",
+						"getData sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> saveData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
+				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Promedio del importe por pedido (orden) en un periodo: Ventas totales / número de pedidos",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderHeader",
+							"description": "basado en la tabla SalesLT.SalesOrderHeader"
+						},
+						{
+							"dataset": {
+								"referenceName": "DataSet_SQL_AdventureWorks",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetail",
+							"description": "get SalesOrderDetail"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataSet_Sink_DataLake",
+								"type": "DatasetReference"
+							},
+							"name": "SaveData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "innerjoin",
+							"description": "SalesOrderHeader.SalesOrderID == SalesOrderDetail.SalesOrderID"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "aggregate2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          SalesOrderID as integer,",
+						"          RevisionNumber as integer,",
+						"          OrderDate as timestamp,",
+						"          DueDate as timestamp,",
+						"          ShipDate as timestamp,",
+						"          Status as integer,",
+						"          OnlineOrderFlag as boolean,",
+						"          SalesOrderNumber as string,",
+						"          PurchaseOrderNumber as string,",
+						"          AccountNumber as string,",
+						"          CustomerID as integer,",
+						"          ShipToAddressID as integer,",
+						"          BillToAddressID as integer,",
+						"          ShipMethod as string,",
+						"          CreditCardApprovalCode as string,",
+						"          SubTotal as decimal(19,4),",
+						"          TaxAmt as decimal(19,4),",
+						"          Freight as decimal(19,4),",
+						"          TotalDue as decimal(19,4),",
+						"          Comment as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT * FROM SalesLT.SalesOrderHeader ',",
+						"     format: 'query') ~> SalesOrderHeader",
+						"source(output(",
+						"          SalesOrderID as integer,",
+						"          SalesOrderDetailID as integer,",
+						"          OrderQty as short,",
+						"          ProductID as integer,",
+						"          UnitPrice as decimal(19,4),",
+						"          UnitPriceDiscount as decimal(19,4),",
+						"          LineTotal as decimal(38,6),",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     query: 'SELECT * FROM SalesLT.SalesOrderDetail',",
+						"     format: 'query') ~> SalesOrderDetail",
+						"SalesOrderHeader, SalesOrderDetail join(SalesOrderHeader@SalesOrderID == SalesOrderDetail@SalesOrderID,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> innerjoin",
+						"innerjoin aggregate(groupBy(SalesOrderHeader@SalesOrderID),",
+						"     OrderTotal = sum(LineTotal),",
+						"          OrderDate = min(OrderDate)) ~> aggregate1",
+						"aggregate1 aggregate(groupBy(yearOrderDate = year(OrderDate),",
+						"          monthOrderDate = month(OrderDate)),",
+						"     AOV = avg(OrderTotal),",
+						"          OrdersCount = count(SalesOrderID)) ~> aggregate2",
+						"aggregate2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SaveData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataSet_SQL_AdventureWorks')]",
+				"[concat(variables('factoryId'), '/datasets/DataSet_Sink_DataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/default')]",
+			"type": "Microsoft.DataFactory/factories/managedVirtualNetworks",
+			"apiVersion": "2018-06-01",
+			"properties": {},
+			"dependsOn": []
+		}
+	]
+}
