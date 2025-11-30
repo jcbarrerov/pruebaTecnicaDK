@@ -25,7 +25,7 @@
 			],
 			"transformations": [],
 			"scriptLines": [
-				"source(allowSchemaDrift: true,",
+				"source(allowSchemaDrift: false,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     query: 'SELECT\\n  DATEPART(YEAR, h.OrderDate) AS Year,\\n  DATEPART(MONTH, h.OrderDate) AS Month,\\n  SUM(d.LineTotal) AS TotalSales\\nFROM SalesLT.SalesOrderHeader h\\nJOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID\\nWHERE h.OrderDate BETWEEN \\'2000-01-01\\' AND \\'2025-12-31\\'\\nGROUP BY DATEPART(YEAR,h.OrderDate), DATEPART(MONTH,h.OrderDate)',",
