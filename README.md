@@ -360,13 +360,13 @@ Para la inserción de los datos se utilizó el siguiente código podemos explica
 
 #### **CTE para consultar los valores agregados**
 
-En esta sección de código se utiliza la consulta temporal CTE1, las funciones de agregación y agrupación para obtener los datos solicitados que serán insertados en la tabla CLIMA_DIA. 
+En esta sección de código se utiliza la consulta temporal `CTE1`, las funciones de agregación y agrupación para obtener los datos solicitados que serán insertados en la tabla `CLIMA_DIA`. 
 
-La función de agregación por excelencia en esta consuta es AVG que se encarga de calcular el promedio de los valores seleccionados por el GROUP BY. Un aspecto relevante en la función de agregación usada en la métrica de temperacuta es que se utiliza la función sobre ((a.TEMP_CELCIUS * 9.0/5.0) + 32) ya que la temperatura de la tabla CLIMA está expresada en grados celcius. 
+La función de agregación por excelencia en esta consuta es `AVG` que se encarga de calcular el promedio de los valores seleccionados por el GROUP BY. Un aspecto relevante en la función de agregación usada en la métrica de temperacuta es que se utiliza la función sobre `((a.TEMP_CELCIUS * 9.0/5.0) + 32)` ya que la temperatura de la tabla `CLIMA` está expresada en grados celcius. 
 
-En el caso de la FECHA se utiliza la función CAST, que convierte el tipo de dato que se tenía en la tabla CLIMA (DATETIME2) a DATE para que únicamente selecione la fecha con el formato establecido en la tabla CLIMA_DIA. Para la columna SET_COVERTURA se utilizó la función STRING_AGG que se encarga de agrupar todos los valores seleccionados por el GROUP BY y separarlos por ', '. Adicionalmente, a cada columna se le asigna el alias correspondiente al nombre de la columna de la tabla CLIMA DÍA.
+En el caso de la `FECHA` se utiliza la función `CAST`, que convierte el tipo de dato que se tenía en la tabla `CLIMA` (`DATETIME2`) a `DATE` para que únicamente selecione la fecha con el formato establecido en la tabla CLIMA_DIA. Para la columna `SET_COVERTURA` se utilizó la función `STRING_AGG` que se encarga de agrupar todos los valores seleccionados por el `GROUP BY` y separarlos por `', '`. Adicionalmente, a cada columna se le asigna el alias correspondiente al nombre de la columna de la tabla `CLIMA DÍA`.
 
-Por último, se utiliza el GROUP BY por LOCALIDAD, PAIS y CAST(a.FECHA_HORA AS DATE), de esta manera las agregaciones serán aplicadas diariamente para cada localidad independientemente.
+Por último, se utiliza el `GROUP BY` por `LOCALIDAD`, `PAIS` y `CAST(a.FECHA_HORA AS DATE)`, de esta manera las agregaciones serán aplicadas diariamente para cada localidad independientemente.
 
 #### **Inserción a la tabla `CLIMA_DIA`**
 
@@ -411,9 +411,59 @@ SELECT
     AVG_VEL_VIENTO_NUDOS
 FROM CTE1;
 ```
-Como adición a esta parte del punto en el código se añadió el 
+Como adición a esta parte del punto en el código se añadió el código referentet a un procedimiento almacenado, que permitiría realizar la carga de datos a la tabla `CLIMA_DIA` estableciendo la variable `@FECHA` para un día específico deseado. Por favor revisar el código.
 
-### **Parte 4. Creación de la tabla `CLIMA_DIA` y cargue de los datos**
+### **Parte 4. Uso de funciones de ventana para calcular las diferencias de temperatura**
+
+Como primer paso para resolver este punto se añadió una nueva columna a la tabla `CLIMA` llamada `DELTA_TEMP_C`, Esta columna tiene el mismo tipo de dato que `TEMP_CELCUIUS` y no podrá ser nulo.
+
+Paso seguido se utilizó una consulta temporal `CTE` para obtener los datos con los que posteriormente se calculará la diferencia de temperatura. En esta consulta utilizamos la función `LAG(TEMP_CELCIUS, 1)` que devuelve el valor previo a `TEMP_CELCIUS` en la fila inmediatamente anterior sobre la partición seleccionada. En la partición se selecciónan bloques por `LOCALIDAD` y `PAIS` y se ordenan por `FECHA_HORA` de manera ascendente. De esta manera la partición será para la misma `LOCALIDAD`, perteneciente al mísmo `PAIS` ordena da por `FECHA_HORA` en la cual los datos están ordenados en orden de recolección, así la función `LAG` devolverá el dato de la hora inmediatamente anterior a la fila en la que se encuentra, cabe aclarar que para el primer valor sobre la partición el resultado será `NULL` (ya que no existe un valor anterior a este). A esta función `LAG` se le asígna el nombre de `TEMP_PREVIA`.
+
+Por último, la sección de UPDATE se encarga de realizar un `INNER JOIN` por `ID` de la `CTE` con la tabla CLIMA para posteriormente calcular la diferencia de temperaturas y hacer el `UPDATE` de la columna `DELTA_TEMP_C` con el cálculo. 
+
+```sql
+ALTER TABLE WEATHER.dbo.CLIMA ADD 
+    DELTA_TEMP_C DECIMAL(5,2) NULL;
+
+WITH CTE AS (
+    SELECT
+        ID,
+        TEMP_CELCIUS,
+        LAG(TEMP_CELCIUS, 1) OVER (
+            PARTITION BY LOCALIDAD, PAIS
+            ORDER BY FECHA_HORA
+        ) AS TEMP_PREVIA
+    FROM WEATHER.dbo.CLIMA
+)
+
+UPDATE C
+SET C.DELTA_TEMP_C = C.TEMP_CELCIUS - T.TEMP_PREVIA
+FROM WEATHER.dbo.CLIMA AS C
+INNER JOIN CTE AS T
+    ON C.ID = T.ID;
+```
+Para la tabla `CLIMA_DIA` se realiza el mísmo porcedimiento que con la anterior, la columna añadida se llamó `DELTA_TEMP_F`.
+
+```sql
+ALTER TABLE WEATHER.dbo.CLIMA_DIA ADD 
+    DELTA_TEMP_F DECIMAL(5,2) NULL;
+
+WITH CTE AS (
+    SELECT
+        ID,
+        AVG_TEMP_FAHRENHEIT,
+        LAG(AVG_TEMP_FAHRENHEIT, 1) OVER (
+            PARTITION BY LOCALIDAD, PAIS
+            ORDER BY FECHA
+        ) AS TEMP_PREVIA
+    FROM WEATHER.dbo.CLIMA_DIA
+)
+UPDATE C
+SET C.DELTA_TEMP_F = C.AVG_TEMP_FAHRENHEIT - T.TEMP_PREVIA
+FROM WEATHER.dbo.CLIMA_DIA AS C
+INNER JOIN CTE AS T
+    ON C.ID = T.ID;
+```
 
 
 ---
