@@ -145,6 +145,7 @@ if __name__ == '__main__':
 ---
 
 # **Quest 2: Manipulación de datos**
+
 1. Cargar un data set, del archivo Excel Master Data, únicamente las siguientes
 columnas:
     - Nombre visible Agente
@@ -206,7 +207,7 @@ select_columns_excel = list(dic_columns.values())
 df_excel_selected = df_excel_raw[select_columns_excel].copy()
 ```
 
-### **2. Filtrar por `AGENTE_VISIBLE` y `CENTRAL` **
+### **2. Filtrar por `AGENTE_VISIBLE` y `CENTRAL`**
 
 Para esta sección se filtró el DataFrame df_excel_selected por tres condiciones:
 1. `['AGENTE_VISIBLE'] == "EMGESA"` Selecciona filas donde el agente tiene nombre visible "EMGESA".
@@ -231,7 +232,7 @@ df_text = pd.read_csv(PATH_TXT, encoding="latin1")
 df_text.columns = columns
 ```
 
-### **4. Realizar el merge de los dos data sets por Central**
+### **4. Realizar el merge de los dos data sets por `CENTRAL`**
 
 Para realizar el merge de los DataFrames utilizamos el método de pandas `merge` que nos permite hacer una unión de dos DataFrames. Establecemos el parámetro `on="CENTRAL"` que indica que la unión se hace por la columna "CENTRAL" presente en ambos DataFrames y establecemos que el tipo de unión como `how="left"` que es similar al de un _left join_ en el cual se toman todas las filas de `df_excel_filtered` y solamente se agregan los valores de las filas correspondientes de `df_text` si el valor de la columna "CENTRAL" coincide. De esta manera se asegura de que no se pierden valores de `df_excel_filtered` en caso de que no haya coincidencia. Finalmente se asigna el DataFrame resultante a `df_merged`.
 
@@ -249,6 +250,72 @@ df_merged["SUM_OF_HOURS"]=df_merged[columns_to_sum].sum(axis=1)
 ```
 
 ### **6. Seleccionar los registros de las plantas con suma horizontal mayor que cero**
+
+Para seleccionar los registros se utilizó la condicion `df_merged["SUM_OF_HOURS"] > 0` que nos otorga un vector de booleanos que establecen si se cumple la condición, que la columna "SUM_OF_HOURS" sea mayor que cero. Luego, se inserta el vector dentro del DataFrame `df_merged` para seleccionar las filas que cumplen la condición. Por último, se asignó el DataFrame a la variable `df_final`. 
+
+```python
+df_final = df_merged[df_merged["SUM_OF_HOURS"] > 0]
+```
+
+### **7. Cargar los resultados en un Data set**
+
+Para finalizar este ejercicio se utilizó el metodo `to_csv` para cargar el DataFrame en un archivo de valores separados por comas utilizando la variable `PATH_TO_SAVE` establecida al inicio del código como ruta.
+
+```python
+df_final.to_csv(PATH_TO_SAVE)
+```
+
+# **Quest 3: Prueba de SQL**
+
+Utiliza cualquier dialecto de SQL de tu elección para abordar estos desafíos, de preferencia genera los datos si lo ves necesario para simular y emplear las soluciones de diseño, la idea es explicar tu solución de tal forma que técnicamente el equipo pueda ser capaz de entender y visualizar usa las herramientas que desees además de hacer los scripts de creación dependiendo de cada parte de la prueba.
+
+**Parte 1** Un interesado nos solicita prepararnos para una nueva fuente de datos dentro de nuestro entorno de almacenamiento de datos. La tabla recogerá información meteorológica de forma horaria para diferentes regiones. Las dimensiones y métricas de la tabla deben crearse con los tipos de datos apropiados. La tabla debe diseñarse de manera que se pueda identificar de forma única cada registro dentro de ella. Las siguientes columnas deben estar presentes en la definición de la tabla:
+- Localidad (Poblados en Medellín, Envigado, Sabaneta, etc.)
+- País (Colombia)
+- Temperatura (Grados Celsius)
+- Fecha y hora del registro (horario)
+- Cobertura de nubes (Mínima, Parcial, Total)
+- Índice U/V
+- Presión atmosférica
+- Velocidad del viento (Nudos)
+
+**Parte 2** La tabla definida en la Parte 1 se implementa y comienza a recopilar datos. La tabla se vuelve considerablemente grande, con millones de registros. Proporciona tres maneras en que la tabla actual puede mejorarse para manejar un conjunto de datos más grande y mantener una óptima legibilidad de los datos.
+
+**Parte 3** El mismo interesado llega con nuevos requerimientos. Además de la tabla ya existente, se requiere una nueva tabla completamente separada que recopile la misma información, pero registre la temperatura en Fahrenheit (en lugar de Grados Celsius). Además, la nueva tabla contendrá los registros de temperatura distribuidos por día, en lugar de por hora. La nueva tabla debe contener todos los datos ya recopilados de la tabla definida en la Parte 1.
+
+**Parte 4** Se recibe un nuevo requerimiento por parte del interesado. Ambas tablas definidas en la Parte 1 y la Parte 3 deben ahora capturar la diferencia de temperatura (delta) entre un registro y el anterior. En el caso horario, la nueva métrica contendrá la diferencia entre el momento actual y una hora antes. Para el caso diario, la nueva métrica contendrá la diferencia entre el momento actual y el día anterior. La nueva columna debe ser completada retroactivamente para todas las temperaturas ya existentes.
+
+## **Solución**
+
+Para la realización de este punto se utilizó SQL Server como dialecto y desplegamos la base de datos mediante el uso de docker desktop con una imagen de SQL Server 2022. Se realizó una conexión de la base de datos con el programa Azure Data Studio y se creó la base de datos "WEATHER".
+
+### **Parte 1. Creación de la base de datos y carga**
+
+```sql
+CREATE TABLE CLIMA (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    LOCALIDAD VARCHAR(150) NOT NULL,
+    PAIS VARCHAR(150) NOT NULL,
+    TEMP_CELCIUS DECIMAL(5,2) NOT NULL,
+    FECHA_HORA DATETIME2 NOT NULL,
+    COVERTURA VARCHAR(50) NOT NULL,
+    INDICE_UV DECIMAL(4,2) NOT NULL,
+    PRESION_ATM DECIMAL(6,2) NOT NULL,
+    VEL_VIENTO_NUDOS DECIMAL(6,2) NOT NULL,
+    
+    CONSTRAINT LOCALIDAD_FECHA UNIQUE (LOCALIDAD, FECHA_HORA)
+);
+```
+Para la creación de la tabla `CLIMA` se decidió utilizar un `ID` como `PRIMARY KEY` que es un entero que se inserta automáticamente asignando un valor que incrementa en 1 con cada `INSERT` que se realiza gracias a `IDENTITY(1,1)`, esto permite identificar de manera única cada dato. 
+
+Para los datos relacionados con nombres de locaciones, y características climáticas (`LOCALIDAD`, `PAIS` y `COVERTURA`) se utilizo el tipo de dato VARCHAR ya que ninguno tiene una longitud definida de caracteres y se ha definido el máximo de caracteres basado en qué tan largo podrían ser los nombres a insertar.
+
+Para las mediciones meteorológicas (`TEMP_CELCIUS`, `COVERTURA`, `INDICE_UV`, `PRESIÓN_ATM` y `VEL_VIENTO_NUDOS`) se estableciero como `DECIMAL` con precisiones y escalas adecuadas para los tipos de mediciones. Por ejemplo, el `INDICE_UV` mayor a 11 es muy alto y en ocasiones puede ser registrado como un número decimal, en este caso podría ser almacenado con una precisión de dos décimas.
+
+Para el dato `FECHA_HORA` se estableció el tipo de dato `DATETIME2` que puede almacenar la fecha en formato `YYYY-MM-DD hh:mm:ss[.fracción]` que puede almacenar perfectamente datos como `2023-02-27 13:45:20` sin necesidad de especificar la fracción.
+
+Para que cada valor tenga significado se realizó una restricción en la cuál la pareja `LOCALIDAD` y `FECHA_HORA` son únicas ya que no puede haber dos climas y condiciones meteorológicas iguales al mismo momento en el mismo lugar. Ninguno de los valores a ingresar podrá ser nulo.
+
 
 
 ---
@@ -268,8 +335,4 @@ df_merged["SUM_OF_HOURS"]=df_merged[columns_to_sum].sum(axis=1)
 ## 📥 Lectura del CSV
 
 ### 📌 Código
-```python
-import pandas as pd
 
-df = pd.read_csv("data/input.csv")
-df.head()
