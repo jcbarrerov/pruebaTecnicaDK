@@ -289,7 +289,17 @@ Utiliza cualquier dialecto de SQL de tu elección para abordar estos desafíos, 
 
 Para la realización de este punto se utilizó SQL Server como dialecto y desplegamos la base de datos mediante el uso de docker desktop con una imagen de SQL Server 2022. Se realizó una conexión de la base de datos con el programa Azure Data Studio y se creó la base de datos "WEATHER".
 
-### **Parte 1. Creación de la base de datos y carga**
+### **Parte 1. Creación de la tabla `CLIMA` y carga**
+
+Para la creación de la tabla `CLIMA` se decidió utilizar un `ID` como `PRIMARY KEY` que es un entero que se inserta automáticamente asignando un valor que incrementa en 1 con cada `INSERT` que se realiza gracias a `IDENTITY(1,1)`, esto permite identificar de manera única cada dato. 
+
+Para los datos relacionados con nombres de locaciones, y características climáticas (`LOCALIDAD`, `PAIS` y `COVERTURA`) se utilizo el tipo de dato VARCHAR ya que ninguno tiene una longitud definida de caracteres y se ha definido el máximo de caracteres basado en qué tan largo podrían ser los nombres a insertar.
+
+Para las mediciones meteorológicas (`TEMP_CELCIUS`, `COVERTURA`, `INDICE_UV`, `PRESIÓN_ATM` y `VEL_VIENTO_NUDOS`) se estableciero como `DECIMAL` con precisiones y escalas adecuadas para los tipos de mediciones. Por ejemplo, el `INDICE_UV` mayor a 11 es muy alto y en ocasiones puede ser registrado como un número decimal, en este caso podría ser almacenado con una precisión de dos décimas.
+
+Para el dato `FECHA_HORA` se estableció el tipo de dato `DATETIME2` que puede almacenar la fecha en formato `YYYY-MM-DD hh:mm:ss[.fracción]` que puede almacenar perfectamente datos como `2023-02-27 13:45:20` sin necesidad de especificar la fracción.
+
+Para que cada valor tenga significado se realizó una restricción en la cuál la pareja `LOCALIDAD` y `FECHA_HORA` son únicas ya que no puede haber dos climas y condiciones meteorológicas iguales al mismo momento en el mismo lugar. Ninguno de los valores a ingresar podrá ser nulo.
 
 ```sql
 CREATE TABLE CLIMA (
@@ -306,16 +316,104 @@ CREATE TABLE CLIMA (
     CONSTRAINT LOCALIDAD_FECHA UNIQUE (LOCALIDAD, FECHA_HORA)
 );
 ```
-Para la creación de la tabla `CLIMA` se decidió utilizar un `ID` como `PRIMARY KEY` que es un entero que se inserta automáticamente asignando un valor que incrementa en 1 con cada `INSERT` que se realiza gracias a `IDENTITY(1,1)`, esto permite identificar de manera única cada dato. 
 
-Para los datos relacionados con nombres de locaciones, y características climáticas (`LOCALIDAD`, `PAIS` y `COVERTURA`) se utilizo el tipo de dato VARCHAR ya que ninguno tiene una longitud definida de caracteres y se ha definido el máximo de caracteres basado en qué tan largo podrían ser los nombres a insertar.
+Debido al corto tiempo y para poder tener valores en la base de datos se pidió a una chat de texto predictivo generar un código en python para poder generar valores aleatorios automáticamente. Se realizó una conexión con la base de datos y se insertaron utilizando la librería `sqlalchemy` de python. Por favor revisar `generate_data.py`.
 
-Para las mediciones meteorológicas (`TEMP_CELCIUS`, `COVERTURA`, `INDICE_UV`, `PRESIÓN_ATM` y `VEL_VIENTO_NUDOS`) se estableciero como `DECIMAL` con precisiones y escalas adecuadas para los tipos de mediciones. Por ejemplo, el `INDICE_UV` mayor a 11 es muy alto y en ocasiones puede ser registrado como un número decimal, en este caso podría ser almacenado con una precisión de dos décimas.
+### **Parte 2. Tres mejoras para mejorar la lectura con tablas grandes**
 
-Para el dato `FECHA_HORA` se estableció el tipo de dato `DATETIME2` que puede almacenar la fecha en formato `YYYY-MM-DD hh:mm:ss[.fracción]` que puede almacenar perfectamente datos como `2023-02-27 13:45:20` sin necesidad de especificar la fracción.
+#### **Implementación de Particionamiento**
 
-Para que cada valor tenga significado se realizó una restricción en la cuál la pareja `LOCALIDAD` y `FECHA_HORA` son únicas ya que no puede haber dos climas y condiciones meteorológicas iguales al mismo momento en el mismo lugar. Ninguno de los valores a ingresar podrá ser nulo.
+Las tablas grandes pueden ser particionadas para mejorar la consulta, en este caso, la tabla podría particionarse por un rango de fechas. Si la tabla `CLIMA` se particiona cada mes o año, por ejemplo, se generarían bloques de datos mucho más pequeños. De esta mandera las consultas que incluyen `WHERE FECHA_HORA BETWEEN` se convierten en consultas más eficientes ya que no tienen que leer todos los millones de datos y se hace un uso de los índices más eficiente.
 
+#### **Implementación de índices más elaborados**
+
+La creación de indices adecuados para la consulta puede mejorar considerablemente la velocidad de la misma, de igual manera, los indices mal diseñados pueden no apoyar la consulta de la información o incluso empeorar el proceso al demandar más almacenamiento y procesamiento. Un índice que se podría implementar es el de la columna `FECHA_HORA`, inculsive, si las consultas son recurrentes para un lugar y tiempo específico se podría crear un índice compuesto (`LOCALIDAD`, `FECHA_HORA`). La creación de los índices necesarios para mejorar la consulta dependerá del propósito de las consultas y las consultas que se realicen de manera frecuente en la base de datos. 
+
+#### **Normalización de los datos en un modelado estrella**
+
+Existen muchos datos que pueden llegar a ser redundantes cuando la información se almacena a gran escala. Por ejemplo, si la información recopilida del país siemepre es la mísma o varía muy poco al igual que las localidades puede crearse una tabla de dimensiones y de hechos para mejorar el almacenamiento y consulta. Por ejemplo, se podrían crear tablas de dimensión de localidad, tiempo y clima(refiriendonos a la variable de covertura) en torno a una tabala de hechos que contiene las métricas del clima. 
+
+### **Parte 3. Creación de la tabla `CLIMA_DIA` y cargue de los datos**
+
+Para la creación de la tabla `CLIMA_DIA` se utilizó un formato de datos similar al utilizado para la tabla `CLIMA` para las métricas ya existentes se crearon las columnas con el prefijo `AVG` _average_ en inglés para la palabra promedio, ya que los datos insertados a esta tabla tendrán el promedio de los valores registrados durante el día en la fecha especificada. Ya que el formato de la columna `FECHA` solo necesita almacenar `YYYY-MM-DD` podemos cambiar el tipo de dato a almacenar a `DATE`.
+
+La columna `AVG_TEMP_FAHRENHEIT` almacenará el promedio de las temperaturas registradas en el día en escala Fahrenheit. Parar la columna `SET_COVERTURA` se almacenará una cadena de texto con los climas registrados durante el día, debido a que no se conoce cuantos caracteres contendrá se estableció como tipo de dato `VARCHAR(MAX)`. El `PRIMARY KEY` se estableció de la misma manera en como se hizo para la tabla `CLIMA` y nuevamente se creó un `CONSTRAINT` para que el par `LOCALIDAD`, `FECHA` fueran únicos, nuevamente ninguno de los valores a ingresar podrá ser nulo.
+
+```sql
+CREATE TABLE CLIMA_DIA (
+
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    LOCALIDAD VARCHAR(150) NOT NULL,
+    PAIS VARCHAR(150) NOT NULL,
+    AVG_TEMP_FAHRENHEIT DECIMAL(5,2) NOT NULL,
+    FECHA DATE NOT NULL, 
+    SET_COVERTURA VARCHAR(MAX) NOT NULL,
+    AVG_INDICE_UV DECIMAL(4,2) NOT NULL,
+    AVG_PRESION_ATM DECIMAL(6,2) NOT NULL,
+    AVG_VEL_VIENTO_NUDOS DECIMAL(6,2) NOT NULL,
+    
+    CONSTRAINT LOCALIDAD_FECHA_DIA UNIQUE (LOCALIDAD, FECHA)
+);
+```
+
+Para la inserción de los datos se utilizó el siguiente código podemos explicar el código por secciones:
+
+#### **CTE para consultar los valores agregados**
+
+En esta sección de código se utiliza la consulta temporal CTE1, las funciones de agregación y agrupación para obtener los datos solicitados que serán insertados en la tabla CLIMA_DIA. 
+
+La función de agregación por excelencia en esta consuta es AVG que se encarga de calcular el promedio de los valores seleccionados por el GROUP BY. Un aspecto relevante en la función de agregación usada en la métrica de temperacuta es que se utiliza la función sobre ((a.TEMP_CELCIUS * 9.0/5.0) + 32) ya que la temperatura de la tabla CLIMA está expresada en grados celcius. 
+
+En el caso de la FECHA se utiliza la función CAST, que convierte el tipo de dato que se tenía en la tabla CLIMA (DATETIME2) a DATE para que únicamente selecione la fecha con el formato establecido en la tabla CLIMA_DIA. Para la columna SET_COVERTURA se utilizó la función STRING_AGG que se encarga de agrupar todos los valores seleccionados por el GROUP BY y separarlos por ', '. Adicionalmente, a cada columna se le asigna el alias correspondiente al nombre de la columna de la tabla CLIMA DÍA.
+
+Por último, se utiliza el GROUP BY por LOCALIDAD, PAIS y CAST(a.FECHA_HORA AS DATE), de esta manera las agregaciones serán aplicadas diariamente para cada localidad independientemente.
+
+#### **Inserción a la tabla `CLIMA_DIA`**
+
+Luego se realiza la inserción de los datos resultantes de la `CTE1`, insertando así cada fila como un registro diario y utilizando la estructura de las columnas de la tabla `CLIMA_DIA`.
+
+```sql
+WITH CTE1 AS (
+    SELECT
+        a.LOCALIDAD                                 AS LOCALIDAD,
+        a.PAIS                                      AS PAIS,
+        CAST(a.FECHA_HORA AS DATE)                  AS FECHA,
+        AVG((a.TEMP_CELCIUS * 9.0/5.0) + 32)        AS AVG_TEMP_FAHRENHEIT,
+        STRING_AGG(a.COVERTURA, ', ')               AS SET_COVERTURA,
+        AVG(a.INDICE_UV)                            AS AVG_INDICE_UV,
+        AVG(a.PRESION_ATM)                          AS AVG_PRESION_ATM,
+        AVG(a.VEL_VIENTO_NUDOS)                     AS AVG_VEL_VIENTO_NUDOS
+    FROM WEATHER.dbo.CLIMA AS a
+    GROUP BY
+        a.LOCALIDAD,
+        a.PAIS,
+        CAST(a.FECHA_HORA AS DATE)
+)
+
+INSERT INTO WEATHER.dbo.CLIMA_DIA (
+    LOCALIDAD,
+    PAIS,
+    FECHA,
+    AVG_TEMP_FAHRENHEIT,
+    SET_COVERTURA,
+    AVG_INDICE_UV,
+    AVG_PRESION_ATM,
+    AVG_VEL_VIENTO_NUDOS
+)
+SELECT
+    LOCALIDAD,
+    PAIS,
+    FECHA,
+    AVG_TEMP_FAHRENHEIT,
+    SET_COVERTURA,
+    AVG_INDICE_UV,
+    AVG_PRESION_ATM,
+    AVG_VEL_VIENTO_NUDOS
+FROM CTE1;
+```
+Como adición a esta parte del punto en el código se añadió el 
+
+### **Parte 4. Creación de la tabla `CLIMA_DIA` y cargue de los datos**
 
 
 ---
@@ -325,9 +423,9 @@ Para que cada valor tenga significado se realizó una restricción en la cuál l
 |-----------|-------------|
 | Python | Procesamiento del CSV |
 | Pandas | Transformaciones |
-| VS Code / Jupyter | Entorno de desarrollo |
+| VS Code / Jupyter / Azure Data Studio | Entorno de desarrollo |
 | Git | Control de versiones |
-
+| Azure | Plataforma en la nube |
 ---
 
 # 🧪 **Desarrollo y Transformaciones**

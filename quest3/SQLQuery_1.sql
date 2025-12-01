@@ -1,5 +1,7 @@
 -- CREATE DATABASE WEATHER;
 
+-- PARTE 1 ------------------------------------------------------------------------------------------------
+
 CREATE TABLE CLIMA (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     LOCALIDAD VARCHAR(150) NOT NULL,
@@ -16,67 +18,66 @@ CREATE TABLE CLIMA (
 
 -- SELECT TOP 5 * FROM CLIMA;
 
+-- PARTE 3 ------------------------------------------------------------------------------------------------
 
--- CREATE TABLE CLIMA_DIA (
+CREATE TABLE CLIMA_DIA (
 
---     ID INT IDENTITY(1,1) PRIMARY KEY,
---     LOCALIDAD VARCHAR(150) NOT NULL,
---     PAIS VARCHAR(150) NOT NULL,
---     AVG_TEMP_FAHRENHEIT DECIMAL(5,2) NOT NULL,
---     FECHA DATETIME2 NOT NULL, 
---     SET_COVERTURA VARCHAR(MAX) NOT NULL,
---     AVG_INDICE_UV INT NOT NULL,
---     AVG_PRESION_ATM DECIMAL(6,2) NOT NULL,
---     AVG_VEL_VIENTO_NUDOS DECIMAL(6,2) NOT NULL,
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    LOCALIDAD VARCHAR(150) NOT NULL,
+    PAIS VARCHAR(150) NOT NULL,
+    AVG_TEMP_FAHRENHEIT DECIMAL(5,2) NOT NULL,
+    FECHA DATE NOT NULL, 
+    SET_COVERTURA VARCHAR(MAX) NOT NULL,
+    AVG_INDICE_UV DECIMAL(4,2) NOT NULL,
+    AVG_PRESION_ATM DECIMAL(6,2) NOT NULL,
+    AVG_VEL_VIENTO_NUDOS DECIMAL(6,2) NOT NULL,
     
---     CONSTRAINT LOCALIDAD_FECHA_DIA UNIQUE (LOCALIDAD, FECHA)
-
-
--- );
+    CONSTRAINT LOCALIDAD_FECHA_DIA UNIQUE (LOCALIDAD, FECHA)
+);
 
 
 -----------------------------
 
 
--- WITH CTE1 AS (
---     SELECT
---         a.LOCALIDAD                                 AS LOCALIDAD,
---         a.PAIS                                      AS PAIS,
---         CAST(a.FECHA_HORA AS DATE)                  AS FECHA,
---         AVG((a.TEMP_CELCIUS * 9.0/5.0) + 32)        AS AVG_TEMP_FAHRENHEIT,
---         STRING_AGG(a.COVERTURA, ', ')               AS SET_COVERTURA,
---         AVG(a.INDICE_UV)                            AS AVG_INDICE_UV,
---         AVG(a.PRESION_ATM)                          AS AVG_PRESION_ATM,
---         AVG(a.VEL_VIENTO_NUDOS)                     AS AVG_VEL_VIENTO_NUDOS
---     FROM WEATHER.dbo.CLIMA AS a
---     GROUP BY
---         a.LOCALIDAD,
---         a.PAIS,
---         CAST(a.FECHA_HORA AS DATE)
--- )
+WITH CTE1 AS (
+    SELECT
+        a.LOCALIDAD                                 AS LOCALIDAD,
+        a.PAIS                                      AS PAIS,
+        CAST(a.FECHA_HORA AS DATE)                  AS FECHA,
+        AVG((a.TEMP_CELCIUS * 9.0/5.0) + 32)        AS AVG_TEMP_FAHRENHEIT,
+        STRING_AGG(a.COVERTURA, ', ')               AS SET_COVERTURA,
+        AVG(a.INDICE_UV)                            AS AVG_INDICE_UV,
+        AVG(a.PRESION_ATM)                          AS AVG_PRESION_ATM,
+        AVG(a.VEL_VIENTO_NUDOS)                     AS AVG_VEL_VIENTO_NUDOS
+    FROM WEATHER.dbo.CLIMA AS a
+    GROUP BY
+        a.LOCALIDAD,
+        a.PAIS,
+        CAST(a.FECHA_HORA AS DATE)
+)
 
--- INSERT INTO WEATHER.dbo.CLIMA_DIA (
---     LOCALIDAD,
---     PAIS,
---     FECHA,
---     AVG_TEMP_FAHRENHEIT,
---     SET_COVERTURA,
---     AVG_INDICE_UV,
---     AVG_PRESION_ATM,
---     AVG_VEL_VIENTO_NUDOS
--- )
--- SELECT
---     LOCALIDAD,
---     PAIS,
---     FECHA,
---     AVG_TEMP_FAHRENHEIT,
---     SET_COVERTURA,
---     AVG_INDICE_UV,
---     AVG_PRESION_ATM,
---     AVG_VEL_VIENTO_NUDOS
--- FROM CTE1;
+INSERT INTO WEATHER.dbo.CLIMA_DIA (
+    LOCALIDAD,
+    PAIS,
+    FECHA,
+    AVG_TEMP_FAHRENHEIT,
+    SET_COVERTURA,
+    AVG_INDICE_UV,
+    AVG_PRESION_ATM,
+    AVG_VEL_VIENTO_NUDOS
+)
+SELECT
+    LOCALIDAD,
+    PAIS,
+    FECHA,
+    AVG_TEMP_FAHRENHEIT,
+    SET_COVERTURA,
+    AVG_INDICE_UV,
+    AVG_PRESION_ATM,
+    AVG_VEL_VIENTO_NUDOS
+FROM CTE1;
 
-
+-- STORED PROCEDURE COMO ADICIONAL --
 ---------------------------------------------------------
 -- USE WEATHER;
 -- GO
@@ -130,6 +131,10 @@ CREATE TABLE CLIMA (
 -- END;
 -- GO
 -----------------------------------------------------------
+
+
+-- PARTE 4 ------------------------------------------------------------------------------------------------
+
 
 ALTER TABLE WEATHER.dbo.CLIMA ADD 
     DELTA_TEMP_C DECIMAL(6,2) NULL;
