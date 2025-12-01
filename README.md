@@ -7,7 +7,6 @@
 **Autor:** Juan Camilo Barrero Velásquez  
 **Correo:** jcbarrerov@unal.edu.co  
 **Fecha:** 01/12/2025  
-**Cargo al que aplicas:** Ingeniero de Datos
 
 ---
 
@@ -234,13 +233,22 @@ df_text.columns = columns
 
 ### **4. Realizar el merge de los dos data sets por Central**
 
-
-
+Para realizar el merge de los DataFrames utilizamos el método de pandas `merge` que nos permite hacer una unión de dos DataFrames. Establecemos el parámetro `on="CENTRAL"` que indica que la unión se hace por la columna "CENTRAL" presente en ambos DataFrames y establecemos que el tipo de unión como `how="left"` que es similar al de un _left join_ en el cual se toman todas las filas de `df_excel_filtered` y solamente se agregan los valores de las filas correspondientes de `df_text` si el valor de la columna "CENTRAL" coincide. De esta manera se asegura de que no se pierden valores de `df_excel_filtered` en caso de que no haya coincidencia. Finalmente se asigna el DataFrame resultante a `df_merged`.
 
 ```python
 df_merged = pd.merge(df_excel_filtered, df_text, on="CENTRAL", how="left")
 ```
 
+### **5. Calcular la suma horizontal de todas las horas para cada planta**
+
+Para realizar la suma horizontal se creó la variable tipo lista `columns_to_sum` que almacena los valores de las columnas que queremos sumar (en este caso las correspondientes a las 24 horas). A continuación, utilizamos `df_merged[columns_to_sum]` para seleccionar las columnas y aplicamos el metodo `sum(axis=1)` para realizar la suma, donde `axis=1` establece que la suma debe ser realizada a lo largo de las filas (suma horizontal). Finalmente, el vector resultante es almacenado en la columna "SUM_OF_HOURS" que se asigna dentro del mísmo dataframe `df_merged`.
+
+```python
+columns_to_sum = ["Hora_{}".format(i) for i in range(1, 25)]
+df_merged["SUM_OF_HOURS"]=df_merged[columns_to_sum].sum(axis=1)
+```
+
+### **6. Seleccionar los registros de las plantas con suma horizontal mayor que cero**
 
 
 ---
