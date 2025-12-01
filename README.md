@@ -7,6 +7,7 @@
 **Autor:** Juan Camilo Barrero Velásquez  
 **Correo:** jcbarrerov@unal.edu.co  
 **Fecha:** 01/12/2025  
+**Linkeln** /
 
 ---
 
@@ -141,6 +142,12 @@ if __name__ == '__main__':
     df = create_dataframe(rows, columns)
     load_csv(df,date)
 ```
+
+### **Resultados**
+
+![Prueba de ejecucion](quest1/img/diagrama.png)
+
+
 
 ---
 
@@ -464,11 +471,214 @@ FROM WEATHER.dbo.CLIMA_DIA AS C
 INNER JOIN CTE AS T
     ON C.ID = T.ID;
 ```
+---
 
+# **Quest 5: Prueba Azure**
+
+Construya una solución completa en la nube de Azure que usando todas la base, de pruebas adventure Works, permita crear una etl, para la realización de un trabajo de reporteria dentro de la organización.
+ - desplegar base de datos en sql, con la base de pruebas adventure works
+ - realizar un pipeline con Azure Datafactory, utilizando data flow, para realizar la carga de una base de datos, crear 5 indicadores.
+ - realizar una etl, que poble un datalake.
+
+## **Solución**
+
+En esta prueba técnica se planteó la siguiente arquitectura:
+![Arquitectura Propuesta](quest5\img\arquitectura.png)
+
+El propósito de este esquema es plantear una arquitectura sencilla para desplegar los servicio básicos, se omitieron prácticas detalladas para la asignación de nombres y recursos de red. Pero se hizo el ejercicio de repartir grupos de recurso por contexto. En este caso, cómputo, almacenamiento y network.
+
+### **Data Factory**
+
+Se desplegó el recurso de Data Factory, se hicieron las correspondientes conexiones entre los servicios vinculados 
+
+![Data Factory](quest5\img\)
+
+### **KPIs para la base de datos de Adventure Works**
+
+A continuación, se presentan las siguientes consultas que representan la lógica de los KPIs, estos KPIs fueron extraídos desde Github:
+
+#### **1. KPI Ventas Totales**
+
+Este KPI representa la suma del importe facturado por las línas de pedido o _line totals_ por periodo.
+
+```sql
+SELECT
+  DATEPART(YEAR, h.OrderDate) AS Year,
+  DATEPART(MONTH, h.OrderDate) AS Month,
+  SUM(d.LineTotal) AS TotalSales
+FROM SalesLT.SalesOrderHeader h
+JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID
+WHERE h.OrderDate BETWEEN '2000-01-01' AND '2025-12-31'
+GROUP BY DATEPART(YEAR,h.OrderDate), DATEPART(MONTH,h.OrderDate);
+```
+#### **2. KPI Margen Bruto Porcentaje**
+
+Representa la rentabilidad de los gastos operativos por periodo.
+
+```sql
+SELECT
+  YEAR(h.OrderDate) AS Year,
+  MONTH(h.OrderDate) AS Month,
+  SUM(d.LineTotal) AS Revenue,
+  SUM(p.StandardCost * d.OrderQty) AS COGS,
+  CASE WHEN SUM(d.LineTotal) = 0 THEN NULL
+       ELSE (SUM(d.LineTotal) - SUM(p.StandardCost * d.OrderQty)) * 100.0 / SUM(d.LineTotal)
+  END AS GrossMarginPct
+FROM SalesLT.SalesOrderHeader h
+JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID
+JOIN SalesLT.Product p ON d.ProductID = p.ProductID
+WHERE h.OrderDate BETWEEN '2000-01-01' AND '2025-12-31'
+GROUP BY YEAR(h.OrderDate), MONTH(h.OrderDate);
+```
+
+#### **KPI 3. Valor Promedio Por Pedido**
+
+Promedio del importe por órdenes de un periodo.
+
+```sql
+WITH OrderTotals AS (
+  SELECT d.SalesOrderID, SUM(d.LineTotal) AS OrderTotal, MIN(h.OrderDate) AS OrderDate
+  FROM SalesLT.SalesOrderHeader h
+  JOIN SalesLT.SalesOrderDetail d ON h.SalesOrderID = d.SalesOrderID
+  WHERE h.OrderDate BETWEEN '2000-01-01' AND '2025-12-31'
+  GROUP BY d.SalesOrderID
+)
+SELECT YEAR(OrderDate) AS Year, MONTH(OrderDate) AS Month,
+       AVG(OrderTotal) AS AOV, COUNT(*) AS OrdersCount
+FROM OrderTotals
+GROUP BY YEAR(OrderDate), MONTH(OrderDate);
+```
+
+#### **KPI 4. Tasa entregas a tiempo**
+
+Porcentaje de órdenes por linea enviadas en la fecha o antes de la fecha estipulada.
+
+```sql
+SELECT YEAR(h.ShipDate) AS Year, MONTH(h.ShipDate) AS Month,
+       SUM(CASE WHEN h.ShipDate <= h.DueDate THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS OnTimePct,
+       COUNT(*) AS TotalShipments
+FROM SalesLT.SalesOrderHeader h
+WHERE h.ShipDate IS NOT NULL AND h.ShipDate BETWEEN '2000-01-01' AND '2025-12-31'
+GROUP BY YEAR(h.ShipDate), MONTH(h.ShipDate);
+```
+
+#### **KPI 5. Top 5 Productos Mes**
+.
+Representa el top 5 de los productos más vendidos por mes 
+
+```sql
+WITH MonthlyProductSales AS (
+    SELECT 
+        DATEPART(YEAR, h.OrderDate) AS Año,
+        DATEPART(MONTH, h.OrderDate) AS Mes,
+        p.Name AS Producto,
+        SUM(d.LineTotal) AS VentasProducto,
+        RANK() OVER (
+            PARTITION BY DATEPART(YEAR, h.OrderDate),
+                         DATEPART(MONTH, h.OrderDate)
+            ORDER BY SUM(d.LineTotal) DESC
+        ) AS RankingMensual
+    FROM SalesLT.SalesOrderHeader h
+    JOIN SalesLT.SalesOrderDetail d 
+        ON h.SalesOrderID = d.SalesOrderID
+    JOIN SalesLT.Product p
+        ON d.ProductID = p.ProductID
+    GROUP BY 
+        DATEPART(YEAR, h.OrderDate),
+        DATEPART(MONTH, h.OrderDate),
+        p.Name
+)
+SELECT *
+FROM MonthlyProductSales
+WHERE RankingMensual <= 5
+ORDER BY Año, Mes, RankingMensual;
+```
+
+### **DataFlows**
+
+A continucación se presentan los DataFLows creados para cada KPI:
+
+#### **1. KPI Ventas Totales**
+
+![1. KPI Ventas Totales](quest5\img\DFVentasTotales.png)
+
+#### **2. KPI Margen Bruto Porcentaje**
+
+![2. KPI Margen Bruto Porcentaje](quest5\img\DFMargenBrutoPorcentaje.png)
+
+#### **KPI 3. Valor Promedio Por Pedido**
+
+![KPI 3. Valor Promedio Por Pedido](quest5\img\DFValorPromedioPorPedido.png)
+
+#### **KPI 4. Tasa entregas a tiempo**
+
+![KPI 4. Tasa entregas a tiempo](quest5\img\DFTasaEntregasaTiempo.png)
+
+#### **KPI 5. Top 5 Productos Mes**
+
+![KPI 5. Top 5 Productos Mes](quest5\img\DFTop5ProductosMes.png)
+
+## **Resultados**
+
+Con base a los DataFlows desarrollados se construyeron los pipelinas respectivos que ven en la siguiente imágen
+
+![Pipelines](quest5\img\Pipelines.png)
+
+A continuación, se muestra la ejecución de los pipelines
+
+![Pipelines](quest5\img\EjecuciónPipelinesTriggers.png)
+
+Y por último se puede ver los datos almacenados en el DataLake
+
+![DataLake](quest5\img\DataLake.png)
 
 ---
 
-# 🛠️ **Arquitectura y Herramientas Usadas**
+# **Quest 7: Arquitectura**
+
+En la empresa gaseosas SA están trabajando en una solución analítica que sea capaz de procesar miles de datos de las ventas donde se describen comportamiento de compra y análisis previos hechos por vendedores a clientes con gran volumen de compra, de forma rápida y confiable mediante el uso de tecnologías Big Data de analítica, para entrenar un modelo que sea capaz de identificar los patrones de estas ventas y compararlos en tiempo real con los patrones de datos capturados de manera streaming por dispositivos implantados puntos de venta, para controlar tempranamente y evitar el desabastecimiento.
+
+Tu tarea es realizar un correcto diseño de la arquitectura para la solución analítica que podría soportar estos requerimientos. (Ilustra tu diseño y da una breve explicación de su funcionamiento), es importa definir el gobierno de datos y modelos de acuerdo a los perfiles
+
+## **Solución**
+
+En una etapa inicial de exploración contemplé la utilización de productos SaaS y PaaS tanao de AWS como Azure, sin embargo, debido a la facilidad de conocimeinto de los productos de Azure, finalmente se optó por esta propuesta.
+
+![ImágenDramática](quest7\img\ImagenDramática.jpeg)
+
+Finalmente se decidió presentar la siguiente arquitectura final a muy alto nivel (poco detalle), en esta arquitectura no se contemplan arquitecturas de red, administración de recursos, monitoreo, etc.
+
+![ImágenDramática](quest7\img\ArquetecturaGaseosas.png)
+
+
+### **Explicación resumida de la arquitectura**
+
+La arquitectura propuesta para Gaseosas S.A. permite procesar miles de datos de ventas y señales en tiempo real provenientes de dispositivos instalados en los puntos de venta. El objetivo es anticipar comportamientos de consumo y evitar el desabastecimiento.
+
+Para lograrlo, se separan dos flujos principales:
+
+* **Dispositivos IoT**, que llegan desde dispositivos en tiendas, camiones, fabricas etc.
+* **Uuarios**, como ventas históricas y análisis hechos por los vendedores.
+
+Ambos flujos entran a una infraestructura flexible con balanceadores de carga y máquinas que pueden escalar según la demanda, lo que asegura que el sistema se mantenga disponible aun cuando aumenta la cantidad de datos.
+
+Toda la información llega a un almacenamiento central donde luego es procesada mediante herramientas de orquestación y análisis. Aquí se organizan los datos en capas (Bronze, Silver y Gold), lo que permite tenerlos primero en bruto, luego limpios y finalmente listos para análisis y creación de modelos de inteligencia artificial. Sobre esta base se entrenan modelos predictivos capaces de identificar patrones de compra y compararlos con los datos que llegan en tiempo real desde los dispositivos.
+
+Finalmente, las capas procesadas alimentan reportes en Power BI, donde los equipos de ventas, logística y gerencia pueden visualizar alertas, tendencias y comportamientos relevantes.
+
+### **Gobierno de Datos y Modelos**
+
+El gobierno de datos en esta arquitectura básicamente se encarga de que toda la información que entra y sale del sistema esté bien organizada, sea segura y pueda usarse sin problemas por las áreas que la necesitan.
+
+Primero, cuando los datos llegan desde los dispositivos IoT y desde los sistemas de ventas, pasan por diferentes capas (Bronze, Silver y Gold). Esto ayuda a que los datos se limpien, se ordenen y queden en un formato estándar para que los equipos de analítica y machine learning puedan trabajar sin errores.
+
+También se manejan permisos por perfiles. Por ejemplo, los equipos técnicos pueden ver datos más detallados, mientras que quienes solo usan reportes en Power BI acceden solo a información final. Esto evita riesgos y asegura que cada persona vea solo lo que le corresponde.
+
+Además, se registra de dónde viene cada dato y cómo se transforma. Eso es útil para auditorías y para saber qué está pasando si un reporte o un modelo muestra resultados extraños.
+
+Finalmente, los modelos de machine learning también se administran: se guarda qué versión está en uso, con qué datos se entrenó y cuándo debe actualizarse. Así se evita que el modelo se vuelva obsoleto o dé predicciones equivocadas.
+
+# 🛠️ **Herramientas Usadas**
 | Componente | Descripción |
 |-----------|-------------|
 | Python | Procesamiento del CSV |
@@ -476,11 +686,12 @@ INNER JOIN CTE AS T
 | VS Code / Jupyter / Azure Data Studio | Entorno de desarrollo |
 | Git | Control de versiones |
 | Azure | Plataforma en la nube |
+| Draw.io | Plataforma sketching |
+| LucidChart | Plataforma sketching |
 ---
 
-# 🧪 **Desarrollo y Transformaciones**
+## 📚 Bibliografía
 
-## 📥 Lectura del CSV
-
-### 📌 Código
-
+- Docker. *Docker Desktop Documentation*. Disponible en: https://docs.docker.com/desktop/
+- Microsoft Learn. *Azure Data Factory – Control Flow Expression Language Functions*. Disponible en: https://learn.microsoft.com/en-us/azure/data-factory/control-flow-expression-language-functions
+- Microsoft Learn. *Quickstart: Create a Data Factory*. Disponible en: https://learn.microsoft.com/es-es/azure/data-factory/quickstart-create-data-factory

@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List
 
-def create_dataframe(rows:List[List[str]], columns:List[str]) -> pd.DataFrame:
+def create_dataframe(rows:List[str], columns:List[str]) -> pd.DataFrame:
      """
     Crea un DataFrame de pandas a partir de una lista de filas y nombres de columnas.
 
