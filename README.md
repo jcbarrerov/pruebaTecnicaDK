@@ -13,11 +13,12 @@
 
 # 📂 Índice
 
-1. [Carga de Información](#Carga-de-Información)
+1. [Quest 1: Carga de Información](#Quest-1:-Carga-de-Información)
     - [Solución](#Solución)
-        - [Extracción - Lectura del archivo](Extracción---Lectura-del-archivo)
-        - [Transformación - Procesamiento de la información](Transformación---Procesamiento-de-la-información)
-        - [Carga - creación del DataFrame y exportación del documento CSV](Carga---creación-del-DataFrame-y-exportación-del-documento-CSV)
+        - [Extracción - Lectura del archivo](#Extracción---Lectura-del-archivo)
+        - [Transformación - Procesamiento de la información](#Transformación---Procesamiento-de-la-información)
+        - [Carga - Creación del DataFrame y exportación del documento CSV](#Carga---Creación-del-DataFrame-y-exportación-del-documento-CSV)
+        - [Ejecucción del ETL](#Ejecucción-del-ETL)
 2. [Objetivo de la Prueba](#objetivo-de-la-prueba)
 3. [Arquitectura y Herramientas Usadas](#arquitectura-y-herramientas-usadas)
 4. [Desarrollo y Transformaciones](#desarrollo-y-transformaciones)  
@@ -90,13 +91,13 @@ def get_rows(file:str) -> List[List[str]]:
     print("Rows obtained successfully!")
     return rows
 ```
-### **Carga - creación del DataFrame y exportación del documento CSV**
+### **Carga - Creación del DataFrame y exportación del documento CSV**
 
 Este módulo está compuesto de dos funciones `create_dataframe` y `load_csv`.
 
 En la función `create_dataframe` recibe los parametros rows (una lista de listas de strings) resultante del módulo de extracción y columns correspondiente a una lista que contiene los caracteres correspondientes a los nombres de las columnas.
 
-Luego se crea un dataframe de pandas con las filas y columnas establecidas en los parámentros, utiliza el metodo map que permite retirar los espacios extra al inicio y fin de cada valor si es un string y finalmente imprime un mensaje estableciendo el éxito de la ejecución y retorna el dataframe.
+Luego se crea un dataFrame de pandas con las filas y columnas establecidas en los parámentros, utiliza el metodo map que permite retirar los espacios extra al inicio y fin de cada valor si es un string y finalmente imprime un mensaje estableciendo el éxito de la ejecución y retorna el dataFrame.
 
 ```python
 def create_dataframe(rows:List[List[str]], columns:List[str]) -> pd.DataFrame:
@@ -106,7 +107,7 @@ def create_dataframe(rows:List[List[str]], columns:List[str]) -> pd.DataFrame:
     return df
 ```
 
-La función `load_csv` tiene los parámetros `df` (el dataframe retornado en la función anterior), `date` (la fecha obtenida en la función `extract_date`) y `path` (la ruta donde el archivo va a ser guardado). En este caso el path no es un parámetro obligatorio, de ser especificado lo usa para guardar el archivo dentro del directorio.
+La función `load_csv` tiene los parámetros `df` (el dataFrame retornado en la función anterior), `date` (la fecha obtenida en la función `extract_date`) y `path` (la ruta donde el archivo va a ser guardado). En este caso el path no es un parámetro obligatorio, de ser especificado lo usa para guardar el archivo dentro del directorio.
 
 Esta función genera el archivo CSV sin índices con el nombre `"OFFEI_cleansed_{date}.csv"`, donde `{date}` es reemplazado por la fecha. Finalmente imprime un mensaje indicando que el archivo se generó correctamente. 
 
@@ -119,14 +120,128 @@ def load_csv(df:pd.DataFrame, date:str, path:str | None = None) -> None:
     df.to_csv(path_csv, index=False)
     print("CSV file loaded successfully!")
 ```
+### **Ejecucción del ETL**
+
+Finalmente se realiza la importacíon de las funciones de los módulos y se establece la ruta dónde se encuentra el archivo. Se llaman las funciones con los argumentos correspondientes y asignamos el retorno de las funciones a las variables necesarias para seguir el proceso de ETL
+
+```python
+import os
+
+from module.extract import read_file
+from module.transform import extract_date, get_rows
+from module.load import create_dataframe, load_csv
+
+PATH = os.path.abspath("../data/OFEI1204.txt")
+
+if __name__ == '__main__':
+
+    file = read_file(PATH)
+    date = extract_date(file)
+    rows = get_rows(file)
+    columns = ["Agente", "Planta", "Tipo"] + ["Hora_{}".format(i) for i in range(1, 25)]
+    df = create_dataframe(rows, columns)
+    load_csv(df,date)
+```
+
 ---
 
+# **Quest 2: Manipulación de datos**
+1. Cargar un data set, del archivo Excel Master Data, únicamente las siguientes
+columnas:
+    - Nombre visible Agente
+    - AGENTE (OFEI)
+    - CENTRAL (dDEC, dSEGDES, dPRU…)
+    - Tipo de central (Hidro, Termo, Filo, Menor)
 
-# 🎯 **Objetivo de la Prueba**
-Explica lo que se busca lograr, por ejemplo:
+2. Seleccionar los registros que pertenecen al agente EMGESA ó EMGESA S.A. y adicionalmente que el Tipo de Central sea ‘H’ o ‘T’.
+3. Cargar el archivo dDEC1204.TXT que viene por Central.
+4. Realizar el merge de los dos data sets por Central.
+5. Calcular la suma horizontal de todas las horas para cada planta.
+6. Seleccionar solamente los registros de las plantas cuya suma horizontal sea mayor que cero.
+7. Los resultados deben ser entregados en un dataset.
+8. Enviar junto con la tabla resultante el código utilizado.
+9. Explicar el paso a paso en un archivo de texto (.doc o .pdf).
 
-- Transformar un archivo CSV usando Python  
-- Aplicar limpieza, normalización, enriquecimiento, etc.  
+## **Solución**
+
+Para trabajar este problema se utilizó la ayuda de _Jupyter notebooks_ debido a su facilidad para seguir el flujo de las tareas solicitadas y visualizar los dataframes. Para este programa usaremos la librería _os_, para poder interpretar las rutas relativas de los archivos, y _pandas_ para trabajar con los datos tabulares. Adicionalmente definimos las rutas relativas de los archivos necesarios para el código.
+
+```python
+import os
+import pandas as pd
+
+PATH_EXCEL = os.path.abspath("../data/Datos Maestros VF.xlsx")
+PATH_TXT = os.path.abspath("../data/dDEC1204.TXT")
+PATH_TO_SAVE = os.path.abspath("./Dataset.csv") 
+```
+
+### **1. Cargar el data set**
+
+Para cargar el dataset se utilizó el metodo `read_excel` de pandas en modo binario `'rb'` especificando en nombre de la hoja que contiene la información y el DataFrame resultante se asignó a la variable `df_excel_raw`. 
+
+Adicionalmente se creó un diccionario que contiene pares clave-valor con los nombres de las columnas del DataFrame y nombres simplificados sin espacio respectivamente para posteriormente renombrar las columnas.
+
+Utilizando un `for` que recorre cada par del diccionario se renombran las columnas del DataFrame `df_excel_raw` sin necesidad de crear un nuevo DataFrame gracias al `inplace=True`.
+
+Luego, se seleccionan los datos del DataFrame de las columnas:
+ - Nombre visible Agente que es `AGENTE_VISIBLE`
+ - AGENTE (OFEI) que es `AGENTE_OFEI`
+ - CENTRAL (dDEC, dSEGDES, dPRU…) que es `CENTRAL`
+ - Tipo de central (Hidro, Termo, Filo, Menor) que es `TIPO_CENTRAL`
+
+utilizando la variable `select_columns_excel` que contiene los valores de las columnas a seleccionar del DataFrame se realiza la selección de los valores del DataFrame `df_excel_raw` creando una copia. El nuevo DataFrame es asignado a la variable `df_excel_selected`.
+
+```python
+df_excel_raw = pd.read_excel(open(PATH_EXCEL, 'rb'),
+              sheet_name='Master Data Oficial')
+
+dic_columns = { 'Nombre visible Agente':'AGENTE_VISIBLE'
+                ,'AGENTE (OFEI)':'AGENTE_OFEI'
+                ,'CENTRAL (dDEC, dSEGDES, dPRU…)':'CENTRAL'
+                ,'Tipo de central (Hidro, Termo, Filo, Menor)':'TIPO_CENTRAL'}
+
+for name, rename in dic_columns.items():
+    df_excel_raw.rename(columns={name: rename}, inplace=True)
+
+select_columns_excel = list(dic_columns.values())
+df_excel_selected = df_excel_raw[select_columns_excel].copy()
+```
+
+### **2. Filtrar por `AGENTE_VISIBLE` y `CENTRAL` **
+
+Para esta sección se filtró el DataFrame df_excel_selected por tres condiciones:
+1. `['AGENTE_VISIBLE'] == "EMGESA"` Selecciona filas donde el agente tiene nombre visible "EMGESA".
+2. `['AGENTE_OFEI'] == "EMGESA S.A."` Selecciona filas donde el `AGENTE_OFEI` coincide con "EMGESA S.A.".
+3. `['TIPO_CENTRAL'].isin(['H', 'T'])` Filtra solo los registros cuyo tipo de central sea H o T utilizando `isin` y la lista con los valores deseados.
+
+La condición 1 y 2 están vinculadas por una condicón `or`, mientras que estas dos están ligadas por una condición `and` con la 3. Finalmente El DataFrame resultate se asigna a la variable `df_excel_filtered`.
+
+```python
+df_excel_filtered = df_excel_selected[((df_excel_selected['AGENTE_VISIBLE'] == "EMGESA")
+                                        | (df_excel_selected['AGENTE_OFEI'] == "EMGESA S.A."))
+                                        & (df_excel_selected['TIPO_CENTRAL'].isin(['H', 'T']))]
+```
+
+### **3. Cargar el archivo dDEC1204.TXT**
+
+Para cargar el archivo dDEC1204.TXT que contine los datos por central se creó primero una lista con las columnas correspondientes a el archivo a cargar haciendo uso de un `for` para crear los 24 elementos correspondientes a las horas, luego, se utilizó el metodo `read_csv` de pandas para leer el archivo utilizando `encoding="latin1"` y se asignó al DataFrame `df_text`. Finalmente, se asignaron las columnas almacenadas en la lista columns al DataFrame.
+
+```python
+columns = ["CENTRAL"] + ["Hora_{}".format(i) for i in range(1, 25)]
+df_text = pd.read_csv(PATH_TXT, encoding="latin1")
+df_text.columns = columns
+```
+
+### **4. Realizar el merge de los dos data sets por Central**
+
+
+
+
+```python
+df_merged = pd.merge(df_excel_filtered, df_text, on="CENTRAL", how="left")
+```
+
+
 
 ---
 
