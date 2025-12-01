@@ -4,30 +4,104 @@
 
 #  **Prueba Técnica – Ingeniería de Datos**
 
+![Logo DataKnow](img\logo2020DataKnow.png)
+
+> **Agradecimientos:** Muchas gracias a los evaluadores por leer este contenido.
+
 **Autor:** Juan Camilo Barrero Velásquez  
 **Correo:** jcbarrerov@unal.edu.co  
 **Fecha:** 01/12/2025  
-**Linkeln** /
+**Github de este repositorio** https://github.com/jcbarrerov/pruebaTecnicaDK
+**Linkeln** www.linkedin.com/in/juan-camilo-barrero-velasquez-engineer
 
 ---
 
-# 📂 Índice
+### **Configuración del Entorno**
 
-1. [Quest 1: Carga de Información](#Quest-1:-Carga-de-Información)
-    - [Solución](#Solución)
-        - [Extracción - Lectura del archivo](#Extracción---Lectura-del-archivo)
-        - [Transformación - Procesamiento de la información](#Transformación---Procesamiento-de-la-información)
-        - [Carga - Creación del DataFrame y exportación del documento CSV](#Carga---Creación-del-DataFrame-y-exportación-del-documento-CSV)
-        - [Ejecucción del ETL](#Ejecucción-del-ETL)
-2. [Objetivo de la Prueba](#objetivo-de-la-prueba)
-3. [Arquitectura y Herramientas Usadas](#arquitectura-y-herramientas-usadas)
-4. [Desarrollo y Transformaciones](#desarrollo-y-transformaciones)  
-   - [Lectura del CSV](#lectura-del-csv)
-   - [Limpieza de Datos](#limpieza-de-datos)
-   - [Transformaciones Aplicadas](#transformaciones-aplicadas)
-   - [Escritura del Resultado](#escritura-del-resultado)
-5. [Conclusiones](#conclusiones)
-6. [Anexos](#anexos)
+1. Clona este repositorio en tu máquina local con el siguiente código:
+
+```bash
+git clone https://github.com/jcbarrerov/pruebaTecnicaDK
+```
+
+2. Navega al directorio del proyecto:
+
+```bash
+cd pruebaTecnicaDK
+```
+
+3. Crea un entorno virtual para este proyecto:
+
+```bash
+python -m venv venv
+```
+
+4. Activa el entorno virtual:
+
+En Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+En macOS y Linux:
+
+```bash
+source venv/bin/activate
+```
+
+5. Instala las dependencias del proyecto:
+
+```bash
+pip install -r requirements.txt
+```
+---
+
+# 📂 Tabla de Contenido
+
+- [Prueba Técnica – Ingeniería de Datos](#prueba-técnica--ingeniería-de-datos)
+
+- [Quest 1: Carga de Información](#quest-1-carga-de-información)
+  - [Solución](#solución)
+    - [Extracción - Lectura del archivo](#extracción---lectura-del-archivo)
+    - [Transformación - Procesamiento de la información](#transformación---procesamiento-de-la-información)
+    - [Carga - Creación del DataFrame y exportación del documento CSV](#carga---creación-del-dataframe-y-exportación-del-documento-csv)
+    - [Ejecucción del ETL](#ejecucción-del-etl)
+    - [Resultados](#resultados)
+
+- [Quest 2: Manipulación de datos](#quest-2-manipulación-de-datos)
+  - [1. Cargar el data set](#1-cargar-el-data-set)
+  - [2. Filtrar por agente y tipo de central](#2-filtrar-por-agente_visible-y-central)
+  - [3. Cargar el archivo ddec1204txt](#3-cargar-el-archivo-ddec1204txt)
+  - [4. Merge por CENTRAL](#4-realizar-el-merge-de-los-dos-data-sets-por-central)
+  - [5. Suma horizontal](#5-calcular-la-suma-horizontal-de-todas-las-horas-para-cada-planta)
+  - [6. Filtrar por suma > 0](#6-seleccionar-los-registros-de-las-plantas-con-suma-horizontal-mayor-que-cero)
+  - [7. Exportación del dataset](#7-cargar-los-resultados-en-un-data-set)
+
+- [Quest 3: Prueba de SQL](#quest-3-prueba-de-sql)
+  - [Parte 1: Tabla CLIMA](#parte-1-creación-de-la-tabla-clima-y-carga)
+  - [Parte 2: Mejoras para alto volumen](#parte-2-tres-mejoras-para-mejorar-la-lectura-con-tablas-grandes)
+  - [Parte 3: Tabla CLIMA_DIA](#parte-3-creación-de-la-tabla-clima_dia-y-cargue-de-los-datos)
+  - [Parte 4: Delta de temperaturas (ventanas)](#parte-4-uso-de-funciones-de-ventana-para-calcular-las-diferencias-de-temperatura)
+
+- [Quest 5: Prueba Azure](#quest-5-prueba-azure)
+  - [Arquitectura propuesta](#arquitectura-propuesta)
+  - [Data Factory](#data-factory)
+  - [KPIs para la base de datos de Adventure Works](#kpis-para-la-base-de-datos-de-adventure-works)
+    - [KPI Ventas Totales](#kpi-ventas-totales)
+    - [KPI Margen Bruto Porcentaje](#kpi-margen-bruto-porcentaje)
+    - [KPI 3. Valor Promedio Por Pedido](#kpi-3-valor-promedio-por-pedido)
+    - [KPI 4. Tasa entregas a tiempo](#kpi-4-tasa-entregas-a-tiempo)
+    - [KPI 5. Top 5 Productos Mes](#kpi-5-top-5-productos-mes)
+  - [DataFlows](#dataflows)
+  - [Resultados](#resultados-1)
+
+- [Quest 7: Arquitectura](#quest-7-arquitectura)
+  - [Explicación resumida de la arquitectura](#explicación-resumida-de-la-arquitectura)
+  - [Gobierno de Datos y Modelos](#gobierno-de-datos-y-modelos)
+
+- [🛠️ Herramientas Usadas](#️️️️-herramientas-usadas)
+- [📚 Bibliografía](#📚-bibliografía)
 
 ---
 
@@ -145,9 +219,8 @@ if __name__ == '__main__':
 
 ### **Resultados**
 
-![Prueba de ejecucion](quest1/img/diagrama.png)
-
-
+El resultado final de esta prueba está en el siguiente arcivho 
+[OFFEI_cleansed_2017-12-04.csv](https://github.com/jcbarrerov/pruebaTecnicaDK/blob/main/quest1/OFFEI_cleansed_2017-12-04.csv)
 
 ---
 
@@ -271,6 +344,12 @@ Para finalizar este ejercicio se utilizó el metodo `to_csv` para cargar el Data
 ```python
 df_final.to_csv(PATH_TO_SAVE)
 ```
+
+### **Resultados**
+
+El resultado final de esta prueba está en el siguiente arcivho 
+[Dataset.csv](https://github.com/jcbarrerov/pruebaTecnicaDK/blob/main/quest2/Dataset.csv)
+
 
 # **Quest 3: Prueba de SQL**
 

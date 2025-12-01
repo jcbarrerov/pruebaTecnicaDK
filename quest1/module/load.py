@@ -1,8 +1,8 @@
 import pandas as pd
 from typing import List
 
-def create_dataframe(rows:List[str], columns:List[str]) -> pd.DataFrame:
-     """
+def create_dataframe(rows: List[str], columns: List[str]) -> pd.DataFrame:
+    """
     Crea un DataFrame de pandas a partir de una lista de filas y nombres de columnas.
 
     Esta función construye un DataFrame utilizando las filas y columnas recibidas. 
@@ -12,7 +12,7 @@ def create_dataframe(rows:List[str], columns:List[str]) -> pd.DataFrame:
 
     Parámetros
     ----------
-    rows : List[List[str]]
+    rows : List[str]
         Lista de filas donde cada fila es una lista de valores.
     columns : List[str]
         Lista con los nombres de las columnas del DataFrame.
@@ -27,7 +27,8 @@ def create_dataframe(rows:List[str], columns:List[str]) -> pd.DataFrame:
     print("DataFrame created successfully!")
     return df
 
-def load_csv(df:pd.DataFrame, date:str, path:str | None = None) -> None:
+
+def load_csv(df: pd.DataFrame, date: str, path: str | None = None) -> None:
     """
     Exporta un DataFrame a un archivo CSV con un nombre basado en una fecha.
 
@@ -57,10 +58,4 @@ def load_csv(df:pd.DataFrame, date:str, path:str | None = None) -> None:
 
     df.to_csv(path_csv, index=False)
     print("CSV file loaded successfully!")
-    
-
-
-
-
-
 

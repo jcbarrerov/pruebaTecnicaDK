@@ -25,7 +25,7 @@ def extract_date(file:str) -> str:
     return date.group() if date else None
     
 
-def get_rows(file:str) -> List[List[str]]:
+def get_rows(file:str) -> List[str]:
     """
     Procesa un texto estructurado y extrae filas basadas en agentes y líneas 
     marcadas con ' D'.
